@@ -107,7 +107,6 @@ a { color:var(--primary); text-decoration:none; }
   width: 100%;
   height: 100%;
   background: #525659;
-  scroll-behavior: smooth;
 }
 
 /* 1. Mode Gulir (Scroll) - Default */
@@ -118,51 +117,49 @@ a { color:var(--primary); text-decoration:none; }
   flex-direction: column;
   align-items: center;
   padding: 20px 10px;
-  padding-bottom: 100px; /* Jarak aman toolbar */
+  padding-bottom: 100px;
 }
 .pdf-container.mode-scroll .pdf-spread { display: contents; }
-.pdf-container.mode-scroll .pdf-page { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.pdf-container.mode-scroll .pdf-page { 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4); 
+  margin-bottom: 15px;
+}
 
-/* 2. Mode Slide (1 Halaman Tetap) */
+/* 2. Mode Slide (1 Halaman Tetap - Instan) */
 .pdf-container.mode-1page {
-  overflow-y: hidden;
-  overflow-x: auto;
+  overflow: hidden; /* Kunci Scroll */
   display: flex;
-  flex-direction: row;
-  scroll-snap-type: x mandatory;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 15px 80px 15px;
 }
 .pdf-container.mode-1page .pdf-spread { display: contents; }
+/* Sembunyikan semua, tampilkan hanya yang aktif */
 .pdf-container.mode-1page .pdf-page {
-  flex: 0 0 100%;
-  scroll-snap-align: center;
+  display: none; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.pdf-container.mode-1page .pdf-page.active {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 15px 15px 90px 15px; /* Padding bawah agar tidak tertutup toolbar */
 }
 
-/* 3. Mode Buku (2 Halaman Tetap) */
+/* 3. Mode Buku (2 Halaman Tetap - Instan) */
 .pdf-container.mode-2page {
-  overflow-y: hidden;
-  overflow-x: auto;
+  overflow: hidden; /* Kunci Scroll */
   display: flex;
-  flex-direction: row;
-  scroll-snap-type: x mandatory;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 15px 80px 15px;
 }
 .pdf-container.mode-2page .pdf-spread {
-  flex: 0 0 100%;
-  scroll-snap-align: center;
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   gap: 10px;
-  padding: 15px 15px 90px 15px; /* Padding bawah agar tidak tertutup toolbar */
+  width: 100%;
 }
-.pdf-container.mode-2page .pdf-page {
-  flex: 1;
+.pdf-container.mode-2page .pdf-spread.active {
   display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 /* Gaya Kanvas PDF */
@@ -271,20 +268,10 @@ a { color:var(--primary); text-decoration:none; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
   
-  /* Toolbar Mobile (Lebih Rapat) */
-  .pdf-toolbar { 
-    bottom: 15px; 
-    padding: 6px 8px; 
-    gap: 4px; 
-  }
-  .pdf-tool-btn {
-    width: 30px; height: 30px;
-  }
+  .pdf-toolbar { bottom: 15px; padding: 6px 8px; gap: 4px; }
+  .pdf-tool-btn { width: 30px; height: 30px; }
   .pdf-tool-btn svg { width: 16px; height: 16px; }
-  .pdf-tool-text { 
-    min-width: 40px; 
-    font-size: 0.7rem; 
-  }
+  .pdf-tool-text { min-width: 40px; font-size: 0.7rem; }
   .pdf-tool-divider { margin: 0 1px; }
   
   /* Sembunyikan tombol Zoom di HP karena layar terlalu sempit */
@@ -292,7 +279,7 @@ a { color:var(--primary); text-decoration:none; }
   .pdf-toolbar .pdf-tool-divider:nth-of-type(2) { display: none !important; }
 
   .pdf-container.mode-scroll { padding: 10px 0 90px 0; }
-  .pdf-container.mode-1page .pdf-page, .pdf-container.mode-2page .pdf-spread { padding-bottom: 70px; }
+  .pdf-container.mode-1page, .pdf-container.mode-2page { padding: 10px 0 70px 0; }
 }
 </style>
 </head>
@@ -553,6 +540,7 @@ class ViewerEngine {
         if (i % 2 !== 0) {
           currentSpread = document.createElement('div');
           currentSpread.className = 'pdf-spread';
+          currentSpread.dataset.spreadNum = Math.ceil(i / 2);
           container.appendChild(currentSpread);
         }
 
@@ -560,9 +548,13 @@ class ViewerEngine {
         currentSpread.appendChild(pageDiv);
       }
 
+      this.updatePageVisibility(); // Inisialisasi halaman aktif
+
       container.addEventListener('scroll', () => {
-        this.trackPdfScroll();
-        this.handleToolbarAutoHide(container.scrollTop);
+        if (this.pdfViewMode === 'mode-scroll') {
+          this.trackPdfScroll();
+          this.handleToolbarAutoHide(container.scrollTop);
+        }
       });
 
     } catch (err) {
@@ -641,6 +633,7 @@ class ViewerEngine {
     this.dom.pdfZoomIndicator.textContent = this.pdfZoomLevel + '%';
     const scale = this.pdfZoomLevel / 100;
     const container = $('#pdfContainer');
+    if (!container) return;
 
     if (this.pdfViewMode === 'mode-scroll') {
       const baseWidth = window.innerWidth < 768 ? window.innerWidth - 20 : 850;
@@ -655,12 +648,8 @@ class ViewerEngine {
       });
     } else if (this.pdfViewMode === 'mode-2page') {
       document.querySelectorAll('.pdf-page').forEach(page => {
-        page.style.width = (container.clientWidth / 2 * scale) + 'px';
+        page.style.width = ((container.clientWidth - 30) / 2 * scale) + 'px';
         page.style.maxWidth = 'none';
-      });
-      document.querySelectorAll('.pdf-spread').forEach(spread => {
-        spread.style.width = (container.clientWidth * scale) + 'px';
-        spread.style.flex = `0 0 ${container.clientWidth * scale}px`;
       });
     }
 
@@ -675,13 +664,10 @@ class ViewerEngine {
     container.classList.remove('mode-scroll', 'mode-1page', 'mode-2page');
     container.classList.add(this.pdfViewMode);
 
+    // Reset inline styles agar rapi
     document.querySelectorAll('.pdf-page').forEach(page => {
       page.style.width = '';
       page.style.maxWidth = '';
-    });
-    document.querySelectorAll('.pdf-spread').forEach(spread => {
-      spread.style.width = '';
-      spread.style.flex = '';
     });
 
     if (this.pdfViewMode === 'mode-scroll') {
@@ -693,25 +679,59 @@ class ViewerEngine {
     }
 
     this.applyPdfZoom();
-    setTimeout(() => this.scrollToPdfPage(this.pdfCurrentPage), 100);
+    this.updatePageVisibility();
+    
+    // Scroll ke atas saat ganti mode agar pas
+    if (this.pdfViewMode === 'mode-scroll') {
+      this.scrollToPdfPage(this.pdfCurrentPage);
+    }
+  }
+
+  // FUNGSI BARU: Mengatur halaman mana yang tampil (instan tanpa geser)
+  updatePageVisibility() {
+    const container = $('#pdfContainer');
+    if (!container) return;
+
+    if (this.pdfViewMode === 'mode-scroll') {
+      // Tampilkan semua halaman
+      document.querySelectorAll('.pdf-page').forEach(p => p.classList.remove('active'));
+      return;
+    }
+
+    if (this.pdfViewMode === 'mode-1page') {
+      // Hanya tampilkan halaman aktif
+      document.querySelectorAll('.pdf-page').forEach(p => {
+        if (parseInt(p.dataset.pageNum) === this.pdfCurrentPage) {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
+      });
+    } 
+    else if (this.pdfViewMode === 'mode-2page') {
+      // Tampilkan spread aktif (misal: halaman 1 & 2)
+      const currentSpread = Math.ceil(this.pdfCurrentPage / 2);
+      document.querySelectorAll('.pdf-spread').forEach(s => {
+        if (parseInt(s.dataset.spreadNum) === currentSpread) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+    }
   }
 
   scrollToPdfPage(pageNum) {
     if (pageNum < 1 || pageNum > this.pdfTotalPages) return;
+    this.pdfCurrentPage = pageNum;
+    this.updatePdfToolbar();
     
     if (this.pdfViewMode === 'mode-scroll') {
       const target = document.querySelector(`.pdf-page[data-page-num="${pageNum}"]`);
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } 
-    else if (this.pdfViewMode === 'mode-1page') {
-      const target = document.querySelector(`.pdf-page[data-page-num="${pageNum}"]`);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    } 
-    else if (this.pdfViewMode === 'mode-2page') {
-      const spreadNum = Math.ceil(pageNum / 2);
-      const spreads = document.querySelectorAll('.pdf-spread');
-      const targetSpread = spreads[spreadNum - 1];
-      if (targetSpread) targetSpread.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    } else {
+      // Mode Slide: Instan ganti halaman
+      this.updatePageVisibility();
     }
     
     this.dom.pdfToolbar.classList.remove('toolbar-hidden');
@@ -719,44 +739,19 @@ class ViewerEngine {
 
   trackPdfScroll() {
     const container = $('#pdfContainer');
-    if (!container) return;
+    if (!container || this.pdfViewMode !== 'mode-scroll') return;
     
     let currentVisible = 1;
-
-    if (this.pdfViewMode === 'mode-scroll') {
-      const pages = document.querySelectorAll('.pdf-page');
-      const containerTop = container.getBoundingClientRect().top;
-      let minDistance = Infinity;
-      pages.forEach(page => {
-        const distance = Math.abs(page.getBoundingClientRect().top - containerTop);
-        if (distance < minDistance) {
-          minDistance = distance;
-          currentVisible = parseInt(page.dataset.pageNum);
-        }
-      });
-    } 
-    else if (this.pdfViewMode === 'mode-1page') {
-      const pages = document.querySelectorAll('.pdf-page');
-      let minDistance = Infinity;
-      pages.forEach(page => {
-        const distance = Math.abs(page.getBoundingClientRect().left - container.getBoundingClientRect().left);
-        if (distance < minDistance) {
-          minDistance = distance;
-          currentVisible = parseInt(page.dataset.pageNum);
-        }
-      });
-    } 
-    else if (this.pdfViewMode === 'mode-2page') {
-      const spreads = document.querySelectorAll('.pdf-spread');
-      let minDistance = Infinity;
-      spreads.forEach((spread, index) => {
-        const distance = Math.abs(spread.getBoundingClientRect().left - container.getBoundingClientRect().left);
-        if (distance < minDistance) {
-          minDistance = distance;
-          currentVisible = index * 2 + 1;
-        }
-      });
-    }
+    const pages = document.querySelectorAll('.pdf-page');
+    const containerTop = container.getBoundingClientRect().top;
+    let minDistance = Infinity;
+    pages.forEach(page => {
+      const distance = Math.abs(page.getBoundingClientRect().top - containerTop);
+      if (distance < minDistance) {
+        minDistance = distance;
+        currentVisible = parseInt(page.dataset.pageNum);
+      }
+    });
 
     if (this.pdfCurrentPage !== currentVisible) {
       this.pdfCurrentPage = currentVisible;
@@ -776,7 +771,7 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     MODE LAINNYA
+     MODE LAINNYA (Video, YouTube, Audio, Link)
      ========================================================== */
   initVideo() {
     this.dom.pdfToolbar.classList.add('hidden');
