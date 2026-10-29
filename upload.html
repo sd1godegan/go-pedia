@@ -2,7 +2,7 @@
 <html lang="id" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>Unggah Media · Go-pedia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,7 +38,8 @@
 body {
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg); color:var(--text); line-height:1.55;
-  min-height:100vh; padding:2rem 1rem; -webkit-font-smoothing:antialiased;
+  min-height:100dvh; padding:2rem 1rem; -webkit-font-smoothing:antialiased;
+  overflow-x: hidden;
 }
 button, input, select, textarea { font:inherit; color:inherit; }
 button { cursor:pointer; border:none; background:none; }
@@ -51,19 +52,19 @@ a:hover { text-decoration:underline; }
 /* HEADER */
 .header {
   display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:2rem; gap:1rem;
+  margin-bottom:2rem; gap:1rem; flex-wrap: wrap;
 }
 .brand { display:flex; align-items:center; gap:.75rem; }
 .brand-mark {
   width:44px; height:44px; border-radius:12px;
   background:var(--primary-soft); color:var(--primary);
-  display:grid; place-items:center;
+  display:grid; place-items:center; flex-shrink: 0;
 }
 .brand-mark svg { width:24px; height:24px; }
 .brand-text h1 { font-size:1.1rem; font-weight:800; line-height:1.15; }
 .brand-text p { font-size:.75rem; color:var(--muted); }
 .btn-back {
-  display:inline-flex; align-items:center; gap:.5rem;
+  display:inline-flex; align-items:center; justify-content: center; gap:.5rem;
   padding:.55rem 1rem; border-radius:10px;
   background:var(--surface); border:1px solid var(--border);
   color:var(--text-soft); font-weight:600; font-size:.85rem; transition:all .15s;
@@ -85,10 +86,10 @@ a:hover { text-decoration:underline; }
 }
 .field label .req { color:var(--rose-ink); margin-left:.15rem; }
 .field input, .field select, .field textarea {
-  width:100%; padding:.7rem .9rem;
+  width:100%; padding:.75rem .9rem;
   border:1.5px solid var(--border); border-radius:10px;
   background:var(--surface-2); color:var(--text);
-  outline:none; transition:all .15s;
+  outline:none; transition:all .15s; font-size: 0.9rem;
 }
 .field input:focus, .field select:focus, .field textarea:focus {
   border-color:var(--primary); background:var(--surface);
@@ -98,17 +99,17 @@ a:hover { text-decoration:underline; }
 .field small { display:block; font-size:.72rem; color:var(--muted); margin-top:.35rem; }
 
 .row { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
-@media (max-width:600px) { .row { grid-template-columns:1fr; } }
 
 /* SOURCE TABS (File / Link) */
 .source-tabs {
-  display:inline-flex; padding:.25rem;
+  display:inline-flex; padding:.25rem; width: 100%;
   background:var(--surface-2); border:1px solid var(--border);
   border-radius:10px; margin-bottom:.85rem;
 }
 .source-tabs button {
-  padding:.45rem 1rem; border-radius:8px; font-size:.8rem;
+  flex: 1; padding:.55rem 1rem; border-radius:8px; font-size:.85rem;
   font-weight:700; color:var(--text-soft); transition:all .15s;
+  text-align: center;
 }
 .source-tabs button.active {
   background:var(--surface); color:var(--primary);
@@ -127,18 +128,18 @@ a:hover { text-decoration:underline; }
   background:var(--primary-soft); color:var(--primary);
   display:grid; place-items:center; margin:0 auto .75rem;
 }
-.file-drop p { font-size:.85rem; font-weight:600; color:var(--text); margin-bottom:.25rem; }
-.file-drop small { font-size:.72rem; color:var(--muted); }
+.file-drop p { font-size:.9rem; font-weight:600; color:var(--text); margin-bottom:.25rem; }
+.file-drop small { font-size:.75rem; color:var(--muted); }
 .file-drop input[type="file"] { display:none; }
 
 .file-selected {
   display:flex; align-items:center; gap:.75rem;
-  padding:.75rem 1rem; background:var(--sage);
+  padding:.85rem 1rem; background:var(--sage);
   border-radius:10px; font-size:.85rem; color:var(--sage-ink);
 }
 .file-selected svg { flex-shrink:0; }
 .file-selected .name { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.file-selected .size { font-size:.72rem; opacity:.8; }
+.file-selected .size { font-size:.72rem; opacity:.8; white-space: nowrap; }
 .file-selected button {
   padding:.25rem .5rem; border-radius:6px; font-size:.72rem;
   background:transparent; border:1px solid currentColor;
@@ -147,18 +148,19 @@ a:hover { text-decoration:underline; }
 
 /* BUTTONS */
 .btn-submit {
-  width:100%; padding:.9rem 1rem; border-radius:12px;
+  width:100%; padding:1rem 1rem; border-radius:12px;
   background:var(--primary); color:#fff;
-  font-size:.92rem; font-weight:800;
+  font-size:.95rem; font-weight:800;
   display:flex; align-items:center; justify-content:center; gap:.5rem;
   transition:all .15s; margin-top:1rem;
+  margin-bottom: env(safe-area-inset-bottom);
 }
 .btn-submit:hover:not(:disabled) { background:var(--primary-hover); transform:translateY(-1px); }
 .btn-submit:disabled { opacity:.6; cursor:wait; }
 
 /* ALERTS */
 .alert {
-  padding:.9rem 1rem; border-radius:10px; font-size:.85rem;
+  padding:1rem; border-radius:10px; font-size:.85rem;
   margin-bottom:1rem; display:flex; align-items:flex-start; gap:.6rem;
 }
 .alert.error { background:var(--rose); color:var(--rose-ink); border:1px solid currentColor; }
@@ -168,7 +170,7 @@ a:hover { text-decoration:underline; }
 /* PERMALINK BOX */
 .permalink-box {
   background:var(--surface-2); border:2px solid var(--sage);
-  border-radius:12px; padding:1rem 1.25rem; margin:1rem 0 1.5rem;
+  border-radius:12px; padding:1.25rem; margin:1rem 0;
 }
 .permalink-box label {
   font-size:.72rem; font-weight:800; color:var(--sage-ink);
@@ -176,7 +178,7 @@ a:hover { text-decoration:underline; }
 }
 .permalink-row { display:flex; gap:.5rem; align-items:stretch; }
 .permalink-input {
-  flex:1; padding:.6rem .85rem; background:var(--surface);
+  flex:1; padding:.65rem .85rem; background:var(--surface);
   border:1px solid var(--border); border-radius:8px;
   font-family:monospace; font-size:.75rem; color:var(--text);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -184,14 +186,15 @@ a:hover { text-decoration:underline; }
 .permalink-copy {
   padding:0 1rem; border-radius:8px; background:var(--primary);
   color:#fff; font-weight:700; font-size:.8rem;
-  display:flex; align-items:center; gap:.35rem; transition:background .15s;
+  display:flex; align-items:center; justify-content:center; gap:.35rem; transition:background .15s;
+  flex-shrink: 0;
 }
 .permalink-copy:hover { background:var(--primary-hover); }
 .permalink-copy.copied { background:var(--sage-ink); }
-.permalink-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; }
+.permalink-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.85rem; }
 .permalink-actions a {
-  display:inline-flex; align-items:center; gap:.35rem;
-  padding:.5rem .85rem; border-radius:8px; font-size:.8rem; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center; gap:.35rem;
+  padding:.6rem 1rem; border-radius:8px; font-size:.8rem; font-weight:700;
   background:var(--surface); border:1px solid var(--border);
   color:var(--text-soft); transition:all .15s;
 }
@@ -210,12 +213,40 @@ a:hover { text-decoration:underline; }
 .login-required h2 { margin-bottom:.5rem; }
 .login-required p { color:var(--muted); margin-bottom:1.5rem; }
 
+/* TOAST */
 .toast {
   position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(120px);
-  background:var(--text); color:var(--bg); padding:.7rem 1.2rem; border-radius:10px;
+  background:var(--text); color:var(--bg); padding:.75rem 1.25rem; border-radius:10px;
   font-size:.85rem; font-weight:600; box-shadow:var(--shadow-md); z-index:999; transition:transform .3s;
+  text-align: center; max-width: 90vw;
 }
 .toast.show { transform:translateX(-50%) translateY(0); }
+
+/* ==========================================================
+   MEDIA QUERIES: TABLET & MOBILE
+   ========================================================== */
+@media (max-width: 768px) {
+  body { padding: 1rem 0.75rem; }
+  .header { flex-direction: column; align-items: stretch; gap: 1rem; margin-bottom: 1.5rem; }
+  .btn-back { width: 100%; justify-content: center; }
+  
+  .card { padding: 1.5rem 1.25rem; }
+  .row { grid-template-columns: 1fr; gap: 0; } /* Menumpuk form kiri-kanan */
+  
+  /* File / Link Tabs */
+  .source-tabs { flex-direction: row; }
+  
+  /* Permalink Box di HP */
+  .permalink-row { flex-direction: column; gap: 0.5rem; }
+  .permalink-copy { padding: 0.8rem; width: 100%; }
+  .permalink-actions { flex-direction: column; }
+  .permalink-actions a { width: 100%; }
+  
+  /* File Selected */
+  .file-selected { flex-wrap: wrap; justify-content: center; text-align: center; }
+  .file-selected .name { flex: 1 1 100%; white-space: normal; word-break: break-all; }
+  .file-selected .size { flex: 1 1 auto; text-align: left; }
+}
 </style>
 </head>
 <body>
