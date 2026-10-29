@@ -128,13 +128,13 @@ a { color:var(--primary); text-decoration:none; }
   justify-content: center;
 }
 
-/* 2. Mode Slide (1 Halaman Full) */
+/* 2. Mode Slide (1 Halaman Full Fit) */
 .pdf-container.mode-1page {
   overflow: hidden; /* Terkunci penuh di layar */
-  padding: 10px 10px 80px 10px; /* Jarak aman untuk toolbar */
+  padding: 15px 15px 80px 15px; /* Jarak aman untuk toolbar */
 }
 .pdf-container.mode-1page .pdf-page {
-  display: none; /* Sembunyikan yang tidak aktif */
+  display: none;
   width: 100%;
   height: 100%;
   align-items: center;
@@ -144,10 +144,10 @@ a { color:var(--primary); text-decoration:none; }
   display: flex;
 }
 
-/* 3. Mode Buku (2 Halaman Full) */
+/* 3. Mode Buku (2 Halaman Full Fit - Berdampingan) */
 .pdf-container.mode-2page {
   overflow: hidden;
-  padding: 10px 10px 80px 10px;
+  padding: 15px 15px 80px 15px;
 }
 .pdf-container.mode-2page .pdf-spread {
   display: none;
@@ -155,26 +155,27 @@ a { color:var(--primary); text-decoration:none; }
   height: 100%;
   align-items: center;
   justify-content: center;
-  gap: 15px;
+  gap: 10px; /* Jarak antar halaman (spine) */
 }
 .pdf-container.mode-2page .pdf-spread.active {
   display: flex;
 }
 .pdf-container.mode-2page .pdf-page {
-  flex: 1; /* 50% - 50% */
+  flex: 1;
+  width: 50%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Gaya Kanvas PDF */
+/* Gaya Kanvas PDF - Kunci agar tidak terpotong & proporsional */
 .pdf-page canvas {
   max-width: 100%;
   max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain; /* Kunci agar tidak gepeng */
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Menjaga rasio gambar (fit to screen) */
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   border-radius: 2px;
@@ -293,16 +294,14 @@ a { color:var(--primary); text-decoration:none; }
   .btn-back { padding:.5rem; }
   
   .v-footer { padding: 0 1rem; }
-  .foot-btn span { display: none; } /* Sembunyikan teks tombol Drive di HP */
+  .foot-btn span { display: none; } 
   
-  /* Toolbar Mobile */
   .pdf-toolbar { bottom: 15px; padding: 6px 8px; gap: 4px; }
   .pdf-tool-btn { width: 30px; height: 30px; }
   .pdf-tool-btn svg { width: 16px; height: 16px; }
   .pdf-tool-text { min-width: 40px; font-size: 0.7rem; }
   .pdf-tool-divider { margin: 0 1px; }
   
-  /* Sembunyikan tombol Zoom di HP karena layar terlalu sempit */
   #btnZoomIn, #btnZoomOut, #pdfZoomIndicator { display: none !important; }
   .pdf-toolbar .pdf-tool-divider:nth-of-type(2) { display: none !important; }
 
@@ -657,16 +656,17 @@ class ViewerEngine {
     };
   }
 
-  // FUNGSI ZOOM: Menggunakan transform scale pada pembungkus
+  // FUNGSI ZOOM (Transformasi Skala pada Pembungkus)
   applyPdfZoom() {
     this.dom.pdfZoomIndicator.textContent = this.pdfZoomLevel + '%';
     const scale = this.pdfZoomLevel / 100;
     const container = $('#pdfContainer');
     
     document.querySelectorAll('.pdf-page').forEach(page => {
+      // Menggunakan CSS Transform untuk zoom agar tidak merusak layout Flexbox
       page.style.transform = `scale(${scale})`;
       
-      // Atur titik fokus zoom
+      // Titik fokus zoom
       if (this.pdfViewMode === 'mode-scroll') {
         page.style.transformOrigin = 'top center';
       } else {
@@ -674,7 +674,7 @@ class ViewerEngine {
       }
     });
 
-    // Atur perilaku scrollbar saat di-zoom
+    // Jika mode slide dan di-zoom, munculkan scrollbar agar bisa digeser
     if (this.pdfViewMode !== 'mode-scroll') {
       if (scale > 1) {
         container.style.overflow = 'auto';
@@ -698,7 +698,7 @@ class ViewerEngine {
     container.classList.remove('mode-scroll', 'mode-1page', 'mode-2page');
     container.classList.add(this.pdfViewMode);
 
-    // Reset transform
+    // Reset transform saat ganti mode
     document.querySelectorAll('.pdf-page').forEach(page => {
       page.style.transform = '';
     });
@@ -729,7 +729,7 @@ class ViewerEngine {
     }
   }
 
-  // Fungsi Instan untuk Mode Slide
+  // Fungsi Instan untuk Mode Slide (Ganti Halaman)
   updatePageVisibility() {
     const container = $('#pdfContainer');
     if (!container) return;
