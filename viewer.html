@@ -96,7 +96,7 @@ a { color:var(--primary); text-decoration:none; }
   display:flex; align-items:center; justify-content:center;
   padding:0; overflow:hidden;
 }
-.v-frame.frame-media { background:#525659; } /* Latar PDF Reader */
+.v-frame.frame-media { background:#525659; } 
 .v-stage:fullscreen { max-width:100%; padding:0; background:#000; }
 .v-stage:fullscreen .v-frame { border-radius:0; border:none; }
 
@@ -114,12 +114,11 @@ a { color:var(--primary); text-decoration:none; }
   background: #525659;
 }
 
-/* Halaman PDF */
 .pdf-page {
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   width: 100%;
-  max-width: 850px; /* Lebar maksimal seperti kertas A4 di layar */
+  max-width: 850px;
   border-radius: 2px;
 }
 
@@ -129,8 +128,8 @@ a { color:var(--primary); text-decoration:none; }
   height: auto;
 }
 
-/* IFRAME (YouTube & Drive Video) */
-.v-frame iframe {
+/* IFRAME & EMBED (PDF Native / Video) */
+.v-frame iframe, .v-frame embed {
   width: 100%;
   height: 100%;
   border: 0;
@@ -348,14 +347,15 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     RENDER CUSTOM PDF (Native Canvas Styling)
+     RENDER CUSTOM PDF (Upgrade PDF.js v3 + Fallback)
      ========================================================== */
   async initCustomPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
     
     try {
-      await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js");
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      // 1. Load PDF.js VERSI TERBARU (3.11.174) untuk fix bug pattern
+      await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
       const res = await fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`);
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
@@ -368,7 +368,6 @@ class ViewerEngine {
 
       this.dom.vLoadingText.textContent = 'Memproses dokumen...';
       
-      // Bersihkan semua karakter spasi/newline
       const cleanBase64 = data.content.replace(/\s/g, '');
       const binary = atob(cleanBase64);
       const bytes = new Uint8Array(binary.length);
@@ -390,19 +389,14 @@ class ViewerEngine {
       this.dom.vLoading.style.opacity = '0';
       setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
 
-      // Tentukan skala render HD (2x lipat agar tajam)
-      const scale = 1.5;
-
       // Render per halaman
       for (let i = 1; i <= total; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale });
+        const viewport = page.getViewport({ scale: 1.5 });
         
-        // Buat pembungkus halaman
         const wrapper = document.createElement('div');
         wrapper.className = 'pdf-page';
         
-        // Buat canvas
         const canvas = document.createElement('canvas');
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
@@ -410,18 +404,45 @@ class ViewerEngine {
         wrapper.appendChild(canvas);
         container.appendChild(wrapper);
         
-        // Render gambar ke canvas
         await page.render({ 
             canvasContext: canvas.getContext('2d', { alpha: false }), 
             viewport 
         }).promise;
 
-        // Jeda 10ms agar browser tidak freeze saat render halaman banyak
         await new Promise(r => setTimeout(r, 10));
       }
 
     } catch (err) {
       console.error('Custom PDF Error:', err);
+      // KARENA ERROR PATTERN TERJADI, KITA FALLBACK KE NATIVE PDF CHROME
+      this.dom.vLoadingText.textContent = 'Memuat penampil cadangan...';
+      setTimeout(() => this.initBlobNative(), 1000);
+    }
+  }
+
+  // Metode cadangan: Native Blob URL (Bebas bug PDF.js, dibuka via mesin asli Chrome)
+  async initBlobNative() {
+    try {
+      const res = await fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`);
+      const data = await res.json();
+      
+      const cleanBase64 = data.content.replace(/\s/g, '');
+      const binary = atob(cleanBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(blob);
+
+      const html = `
+        <embed src="${pdfUrl}" type="application/pdf" 
+               style="width:100%; height:100%; border:none; background:#525659;">
+      `;
+      
+      this.mountMedia(html);
+
+    } catch (err) {
+      console.error('Blob Native Error:', err);
       this.showError('Gagal memuat PDF: ' + err.message);
     }
   }
