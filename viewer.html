@@ -106,30 +106,27 @@ a { color:var(--primary); text-decoration:none; }
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 0;
+  padding: 20px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   background: #525659;
-  scroll-behavior: smooth;
 }
 
-/* Halaman PDF yang sudah diperbaiki */
+/* Halaman PDF */
 .pdf-page {
   background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  /* Lebar dikunci maksimal 800px agar pas di layar laptop/PC */
-  width: 90%;
-  max-width: 800px;
-  border-radius: 4px;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  width: 100%;
+  max-width: 850px; /* Lebar maksimal seperti kertas A4 di layar */
+  border-radius: 2px;
 }
 
 .pdf-page canvas {
+  display: block;
   width: 100%;
   height: auto;
-  display: block;
 }
 
 /* IFRAME (YouTube & Drive Video) */
@@ -176,7 +173,7 @@ a { color:var(--primary); text-decoration:none; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
   .pdf-container { padding: 10px 0; gap: 10px; }
-  .pdf-page { width: 100%; border-radius: 0; max-width: 100%; }
+  .pdf-page { width: 100%; max-width: 100%; border-radius: 0; }
 }
 </style>
 </head>
@@ -351,7 +348,7 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     RENDER CUSTOM PDF (Sequential Progressive - Anti Crash)
+     RENDER CUSTOM PDF (Native Canvas Styling)
      ========================================================== */
   async initCustomPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
@@ -371,6 +368,7 @@ class ViewerEngine {
 
       this.dom.vLoadingText.textContent = 'Memproses dokumen...';
       
+      // Bersihkan semua karakter spasi/newline
       const cleanBase64 = data.content.replace(/\s/g, '');
       const binary = atob(cleanBase64);
       const bytes = new Uint8Array(binary.length);
@@ -388,29 +386,23 @@ class ViewerEngine {
       this.dom.mediaContainer.appendChild(container);
       this.dom.vFrame.classList.add('frame-media');
 
-      // Hitung lebar maksimal halaman berdasarkan layar
-      const containerWidth = Math.min(850, window.innerWidth - 60);
-      const outputScale = Math.min(window.devicePixelRatio || 1, 2.0);
-
-      // Sembunyikan loading screen seketika (jangan tunggu semua selesai)
+      // Hilangkan loading screen segera
       this.dom.vLoading.style.opacity = '0';
       setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
 
-      // Proses Halaman 1 per 1 (Anti Freeze)
+      // Tentukan skala render HD (2x lipat agar tajam)
+      const scale = 1.5;
+
+      // Render per halaman
       for (let i = 1; i <= total; i++) {
         const page = await pdf.getPage(i);
-        const nativeViewport = page.getViewport({ scale: 1 });
-        
-        // Skala agar pas dengan lebar layar
-        const scale = (containerWidth * outputScale) / nativeViewport.width;
         const viewport = page.getViewport({ scale });
         
+        // Buat pembungkus halaman
         const wrapper = document.createElement('div');
         wrapper.className = 'pdf-page';
         
-        // Atur tinggi pembungkus agar tidak meloncat saat proses render
-        wrapper.style.height = (viewport.height / outputScale) + 'px';
-        
+        // Buat canvas
         const canvas = document.createElement('canvas');
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
@@ -418,11 +410,14 @@ class ViewerEngine {
         wrapper.appendChild(canvas);
         container.appendChild(wrapper);
         
-        // Render halaman ke canvas
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        // Render gambar ke canvas
+        await page.render({ 
+            canvasContext: canvas.getContext('2d', { alpha: false }), 
+            viewport 
+        }).promise;
 
-        // Jeda 15ms agar browser bisa bernapas (mencegah freeze)
-        await new Promise(r => setTimeout(r, 15));
+        // Jeda 10ms agar browser tidak freeze saat render halaman banyak
+        await new Promise(r => setTimeout(r, 10));
       }
 
     } catch (err) {
