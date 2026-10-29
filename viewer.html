@@ -130,8 +130,8 @@ a { color:var(--primary); text-decoration:none; }
 
 /* 2. Mode Slide (1 Halaman Full Fit) */
 .pdf-container.mode-1page {
-  overflow: hidden; /* Terkunci penuh di layar */
-  padding: 15px 15px 80px 15px; /* Jarak aman untuk toolbar */
+  overflow: hidden;
+  padding: 15px 15px 80px 15px;
 }
 .pdf-container.mode-1page .pdf-page {
   display: none;
@@ -144,7 +144,7 @@ a { color:var(--primary); text-decoration:none; }
   display: flex;
 }
 
-/* 3. Mode Buku (2 Halaman Full Fit - Berdampingan) */
+/* 3. Mode Buku (2 Halaman Full Fit) */
 .pdf-container.mode-2page {
   overflow: hidden;
   padding: 15px 15px 80px 15px;
@@ -155,7 +155,7 @@ a { color:var(--primary); text-decoration:none; }
   height: 100%;
   align-items: center;
   justify-content: center;
-  gap: 10px; /* Jarak antar halaman (spine) */
+  gap: 10px;
 }
 .pdf-container.mode-2page .pdf-spread.active {
   display: flex;
@@ -175,7 +175,7 @@ a { color:var(--primary); text-decoration:none; }
   max-height: 100%;
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Menjaga rasio gambar (fit to screen) */
+  object-fit: contain;
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   border-radius: 2px;
@@ -252,9 +252,7 @@ a { color:var(--primary); text-decoration:none; }
 .v-loading-text { font-size:.85rem; font-weight:600; color:var(--text-soft); max-width:360px; }
 .v-error-text { color:var(--rose-ink); }
 
-/* ==========================================================
-   FOOTER BARU (LEBIH RAPI & PROFESIONAL)
-   ========================================================== */
+/* FOOTER BARU */
 .v-footer { 
   height:var(--footer-h); flex-shrink:0; 
   display:flex; align-items:center; justify-content:space-between; 
@@ -263,26 +261,14 @@ a { color:var(--primary); text-decoration:none; }
   padding-bottom: env(safe-area-inset-bottom);
 }
 .v-author { display:flex; flex-direction: column; justify-content: center; }
-.v-author .label { 
-  font-size:.65rem; color:var(--muted); font-weight: 600; 
-  text-transform: uppercase; letter-spacing: .05em; line-height: 1.2;
-}
-.v-author .name { 
-  font-size:.85rem; font-weight:700; color:var(--text); line-height: 1.2;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.v-author .label { font-size:.65rem; color:var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; line-height: 1.2; }
+.v-author .name { font-size:.85rem; font-weight:700; color:var(--text); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v-footer-actions { display:flex; gap:.4rem; flex-shrink:0; }
-.foot-btn { 
-  display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .85rem; 
-  border-radius:9px; font-size:.8rem; font-weight:700; transition:all .15s; 
-  text-decoration:none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-soft);
-}
+.foot-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .85rem; border-radius:9px; font-size:.8rem; font-weight:700; transition:all .15s; text-decoration:none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-soft); }
 .foot-btn:hover { background:var(--primary-soft); color:var(--primary); border-color: var(--primary-ring); text-decoration:none; }
 .foot-btn svg { width:14px; height:14px; }
 
-/* ==========================================================
-   MEDIA QUERIES: OPTIMASI MOBILE (HP)
-   ========================================================== */
+/* MEDIA QUERIES: MOBILE */
 @media (max-width: 768px) {
   :root { --header-h:56px; --footer-h:52px; }
   .v-main { padding:0; }
@@ -292,7 +278,6 @@ a { color:var(--primary); text-decoration:none; }
   .v-subtitle { display:none; }
   .btn-back span { display:none; }
   .btn-back { padding:.5rem; }
-  
   .v-footer { padding: 0 1rem; }
   .foot-btn span { display: none; } 
   
@@ -301,7 +286,6 @@ a { color:var(--primary); text-decoration:none; }
   .pdf-tool-btn svg { width: 16px; height: 16px; }
   .pdf-tool-text { min-width: 40px; font-size: 0.7rem; }
   .pdf-tool-divider { margin: 0 1px; }
-  
   #btnZoomIn, #btnZoomOut, #pdfZoomIndicator { display: none !important; }
   .pdf-toolbar .pdf-tool-divider:nth-of-type(2) { display: none !important; }
 
@@ -420,6 +404,7 @@ class ViewerEngine {
     this.modeIndex = 0;
 
     this.lastScrollTop = 0;
+    this.objectUrls = []; // Untuk cleanup blob audio
 
     this.dom = {
       vTitle: $('#vTitle'),
@@ -450,6 +435,8 @@ class ViewerEngine {
         this.applyPdfZoom();
       }
     });
+
+    window.addEventListener('beforeunload', () => this.cleanup());
   }
 
   async init() {
@@ -485,7 +472,7 @@ class ViewerEngine {
         case 'pdf': await this.initCustomPDF(); break;
         case 'youtube': this.initYouTube(); break;
         case 'video': this.initVideo(); break;
-        case 'audio': this.initAudio(); break;
+        case 'audio': await this.initAudio(); break;
         default: this.initExternal(); break;
       }
       
@@ -575,7 +562,7 @@ class ViewerEngine {
         currentSpread.appendChild(pageDiv);
       }
 
-      this.updatePageVisibility(); // Inisialisasi halaman aktif
+      this.updatePageVisibility();
 
       container.addEventListener('scroll', () => {
         if (this.pdfViewMode === 'mode-scroll') {
@@ -656,17 +643,13 @@ class ViewerEngine {
     };
   }
 
-  // FUNGSI ZOOM (Transformasi Skala pada Pembungkus)
   applyPdfZoom() {
     this.dom.pdfZoomIndicator.textContent = this.pdfZoomLevel + '%';
     const scale = this.pdfZoomLevel / 100;
     const container = $('#pdfContainer');
     
     document.querySelectorAll('.pdf-page').forEach(page => {
-      // Menggunakan CSS Transform untuk zoom agar tidak merusak layout Flexbox
       page.style.transform = `scale(${scale})`;
-      
-      // Titik fokus zoom
       if (this.pdfViewMode === 'mode-scroll') {
         page.style.transformOrigin = 'top center';
       } else {
@@ -674,7 +657,6 @@ class ViewerEngine {
       }
     });
 
-    // Jika mode slide dan di-zoom, munculkan scrollbar agar bisa digeser
     if (this.pdfViewMode !== 'mode-scroll') {
       if (scale > 1) {
         container.style.overflow = 'auto';
@@ -698,7 +680,6 @@ class ViewerEngine {
     container.classList.remove('mode-scroll', 'mode-1page', 'mode-2page');
     container.classList.add(this.pdfViewMode);
 
-    // Reset transform saat ganti mode
     document.querySelectorAll('.pdf-page').forEach(page => {
       page.style.transform = '';
     });
@@ -723,13 +704,11 @@ class ViewerEngine {
     this.applyPdfZoom();
     this.updatePageVisibility();
     
-    // Scroll ke halaman awal saat ganti mode
     if (this.pdfViewMode === 'mode-scroll') {
       this.scrollToPdfPage(this.pdfCurrentPage);
     }
   }
 
-  // Fungsi Instan untuk Mode Slide (Ganti Halaman)
   updatePageVisibility() {
     const container = $('#pdfContainer');
     if (!container) return;
@@ -815,16 +794,62 @@ class ViewerEngine {
     this.mountMedia(`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`);
   }
 
-  initAudio() {
+  async initAudio() {
     this.dom.pdfToolbar.classList.add('hidden');
-    const src = this.fileId ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(this.fileId)}` : this.link;
+    
+    // Loading UI
     this.mountMedia(`
-      <div class="audio-card">
-        <div class="audio-cover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-        <div class="audio-title">${this.escapeHtml(this.item.Judul)}</div>
-        <div class="audio-subtitle">Audio Pembelajaran</div>
-        <audio controls preload="metadata" src="${src}"></audio>
-      </div>`);
+      <div class="audio-card" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:250px;">
+        <div class="v-spinner" style="border-top-color:var(--primary);"></div>
+        <div class="audio-title" style="margin-top:1.5rem;">Menyiapkan Audio...</div>
+        <div class="audio-subtitle">Mohon tunggu sebentar</div>
+      </div>
+    `);
+
+    try {
+      const res = await fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=audio`);
+      const data = await res.json();
+      
+      if (!data.ok) throw new Error(data.error || 'Gagal mengunduh audio');
+
+      const binary = atob(data.content);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      
+      const blob = new Blob([bytes], { type: data.mimeType || 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(blob);
+      this.objectUrls.push(audioUrl);
+
+      this.mountMedia(`
+        <div class="audio-card">
+          <div class="audio-cover">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          <div class="audio-title">${this.escapeHtml(this.item.Judul)}</div>
+          <div class="audio-subtitle">Audio Pembelajaran</div>
+          <audio controls preload="auto" src="${audioUrl}" style="width:100%;"></audio>
+          <div style="margin-top:1rem;font-size:.75rem;color:var(--muted);">
+            Tidak bisa memutar? <a href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener">Buka di Drive</a>
+          </div>
+        </div>
+      `);
+    } catch (err) {
+      console.error('Audio Error:', err);
+      this.mountMedia(`
+        <div class="audio-card">
+          <div class="audio-cover">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="audio-title">${this.escapeHtml(this.item.Judul)}</div>
+          <div class="audio-subtitle" style="color:var(--rose-ink);">${err.message}</div>
+          <a href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener" class="btn-open-ext" style="margin-top:1rem;">
+            Buka Audio di Google Drive
+          </a>
+        </div>
+      `);
+    }
   }
 
   initExternal() {
@@ -850,8 +875,6 @@ class ViewerEngine {
 
   renderFooter() {
     const name = (this.item.Pengunggah || '').split(' — ').pop() || 'Anonim';
-    
-    // Desain ulang footer: Label + Nama
     this.dom.vAuthor.innerHTML = `
       <span class="label">Pengunggah</span>
       <span class="name">${this.escapeHtml(name)}</span>
@@ -859,7 +882,6 @@ class ViewerEngine {
 
     const actions = [];
     if (this.fileId) {
-      // Tombol Drive tanpa teks di HP
       actions.push(`<a class="foot-btn" href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -902,6 +924,11 @@ class ViewerEngine {
       s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Gagal memuat script: ' + src));
       document.head.appendChild(s);
     });
+  }
+
+  cleanup() {
+    this.objectUrls.forEach(url => URL.revokeObjectURL(url));
+    this.objectUrls = [];
   }
 
   escapeHtml(s) {
