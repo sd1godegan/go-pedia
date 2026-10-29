@@ -96,35 +96,11 @@ a { color:var(--primary); text-decoration:none; }
   display:flex; align-items:center; justify-content:center;
   padding:0; overflow:hidden;
 }
-.v-frame.frame-media { background:#525659; } /* Latar PDF Reader */
+.v-frame.frame-media { background:#525659; } 
 .v-stage:fullscreen { max-width:100%; padding:0; background:#000; }
 .v-stage:fullscreen .v-frame { border-radius:0; border:none; }
 
-/* CUSTOM PDF CONTAINER */
-.pdf-container {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  background: #525659;
-  scroll-behavior: smooth;
-}
-.pdf-page {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  /* Perbaikan: Lebar otomatis menyesuaikan layar tanpa batang hitam */
-  width: 100%;
-  max-width: 900px;
-  height: auto;
-  border-radius: 4px;
-}
-
-/* IFRAME (YouTube & Drive Video) */
+/* IFRAME (Native PDF Viewer, YouTube, Drive) */
 .v-frame iframe {
   width: 100%;
   height: 100%;
@@ -166,8 +142,6 @@ a { color:var(--primary); text-decoration:none; }
   .btn-back { padding:.5rem; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
-  .pdf-container { padding: 10px 0; gap: 10px; }
-  .pdf-page { border-radius: 0; max-width: 100%; }
 }
 </style>
 </head>
@@ -291,7 +265,7 @@ class ViewerEngine {
       
       switch (this.format) {
         case 'pdf':
-          await this.initCustomPDF();
+          await this.initBlobPDF();
           break;
         case 'youtube':
           this.initYouTube();
@@ -342,15 +316,12 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     RENDER CUSTOM PDF (Optimasi Anti-Crash)
+     RENDER NATIVE PDF (BLOB URL)
      ========================================================== */
-  async initCustomPDF() {
+  async initBlobPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
     
     try {
-      await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js");
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
       const res = await fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`);
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       
@@ -360,50 +331,29 @@ class ViewerEngine {
         throw new Error('Isi PDF kosong atau rusak dari server.');
       }
 
+      this.dom.vLoadingText.textContent = 'Menyiapkan tampilan...';
+
+      // Decode Base64 menjadi Byte Array secara aman
       const cleanBase64 = data.content.replace(/\s/g, '');
       const binary = atob(cleanBase64);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const total = pdf.numPages;
+      // Ubah menjadi Blob File Virtual
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(blob);
+
+      // Buka dengan Native PDF Viewer Browser (Anti-Crash)
+      const html = `
+        <iframe src="${pdfUrl}" 
+                style="width:100%; height:100%; border:none; background:#525659;" 
+                allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
       
-      if (!total || total === 0) throw new Error('Dokumen PDF kosong.');
-
-      const container = document.createElement('div');
-      container.className = 'pdf-container';
-      
-      this.dom.mediaContainer.innerHTML = '';
-      this.dom.mediaContainer.appendChild(container);
-      this.dom.vFrame.classList.add('frame-media');
-
-      // Layar loading langsung disembunyikan saat halaman 1 mulai dirender
-      this.dom.vLoading.style.opacity = '0';
-      setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
-
-      // Optimasi memori: Jangan pakai devicePixelRatio (outputScale) yang tinggi
-      const renderScale = 1.5; 
-      
-      // LOOPING DENGAN JEDA (Anti Freeze)
-      for (let i = 1; i <= total; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: renderScale });
-        
-        const canvas = document.createElement('canvas');
-        canvas.className = 'pdf-page';
-        canvas.width = Math.floor(viewport.width);
-        canvas.height = Math.floor(viewport.height);
-        
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        container.appendChild(canvas);
-
-        // Beri jeda 10ms agar browser bisa bernapas (mencegah freeze/crash)
-        await new Promise(r => setTimeout(r, 10));
-      }
+      this.mountMedia(html);
 
     } catch (err) {
-      console.error('Custom PDF Error:', err);
-      this.dom.vLoadingText.textContent = 'Gagal memuat PDF. Beralih ke mode cadangan...';
+      console.error('Blob PDF Error:', err);
+      this.dom.vLoadingText.textContent = 'Gagal memuat. Beralih ke mode cadangan...';
       setTimeout(() => this.initDriveFallback(), 1000);
     }
   }
@@ -522,17 +472,6 @@ class ViewerEngine {
         document.exitFullscreen?.();
         this.dom.fullscreenIcon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>';
       }
-    });
-  }
-
-  loadScript(src) {
-    return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) return resolve();
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Gagal memuat script: ' + src));
-      document.head.appendChild(s);
     });
   }
 
