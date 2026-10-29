@@ -96,11 +96,49 @@ a { color:var(--primary); text-decoration:none; }
   display:flex; align-items:center; justify-content:center;
   padding:0; overflow:hidden;
 }
-.v-frame.frame-media { background:#525659; } 
+.v-frame.frame-media { background:#525659; } /* Warna latar PDF Reader */
 .v-stage:fullscreen { max-width:100%; padding:0; background:#000; }
 .v-stage:fullscreen .v-frame { border-radius:0; border:none; }
 
-/* IFRAME (Native PDF Viewer, YouTube, Drive) */
+/* CUSTOM PDF CONTAINER */
+.pdf-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  background: #525659;
+  scroll-behavior: smooth;
+}
+
+/* Halaman PDF (Lazy Loaded) */
+.pdf-page {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  width: 100%;
+  max-width: 900px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.pdf-page canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* IFRAME (YouTube & Drive Video) */
 .v-frame iframe {
   width: 100%;
   height: 100%;
@@ -116,6 +154,7 @@ a { color:var(--primary); text-decoration:none; }
 .v-spinner { width:38px; height:38px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--primary); animation:spin .8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .v-loading-text { font-size:.85rem; font-weight:600; color:var(--text-soft); max-width:360px; }
+.v-error-text { color:var(--rose-ink); }
 
 .v-footer {
   height:var(--footer-h); flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
@@ -142,6 +181,8 @@ a { color:var(--primary); text-decoration:none; }
   .btn-back { padding:.5rem; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
+  .pdf-container { padding: 10px 0; gap: 10px; }
+  .pdf-page { border-radius: 0; max-width: 100%; }
 }
 </style>
 </head>
@@ -265,7 +306,7 @@ class ViewerEngine {
       
       switch (this.format) {
         case 'pdf':
-          await this.initBlobPDF();
+          await this.initCustomPDF();
           break;
         case 'youtube':
           this.initYouTube();
@@ -316,12 +357,15 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     RENDER NATIVE PDF (BLOB URL)
+     RENDER CUSTOM PDF (Lazy Loading - Anti OOM)
      ========================================================== */
-  async initBlobPDF() {
+  async initCustomPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
     
     try {
+      await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
       const res = await fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`);
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       
@@ -331,41 +375,94 @@ class ViewerEngine {
         throw new Error('Isi PDF kosong atau rusak dari server.');
       }
 
-      this.dom.vLoadingText.textContent = 'Menyiapkan tampilan...';
-
-      // Decode Base64 menjadi Byte Array secara aman
+      this.dom.vLoadingText.textContent = 'Memproses dokumen...';
+      
       const cleanBase64 = data.content.replace(/\s/g, '');
       const binary = atob(cleanBase64);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-      // Ubah menjadi Blob File Virtual
-      const blob = new Blob([bytes], { type: 'application/pdf' });
-      const pdfUrl = URL.createObjectURL(blob);
-
-      // Buka dengan Native PDF Viewer Browser (Anti-Crash)
-      const html = `
-        <iframe src="${pdfUrl}" 
-                style="width:100%; height:100%; border:none; background:#525659;" 
-                allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const total = pdf.numPages;
       
-      this.mountMedia(html);
+      if (!total || total === 0) throw new Error('Dokumen PDF kosong.');
+
+      const container = document.createElement('div');
+      container.className = 'pdf-container';
+      
+      this.dom.mediaContainer.innerHTML = '';
+      this.dom.mediaContainer.appendChild(container);
+      this.dom.vFrame.classList.add('frame-media');
+
+      // Layar loading disembunyikan seketika
+      this.dom.vLoading.style.opacity = '0';
+      setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
+
+      // 1. Buat semua placeholder halaman kosong (tanpa render)
+      const pageWrappers = [];
+      for (let i = 1; i <= total; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1 });
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pdf-page';
+        wrapper.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
+        wrapper.dataset.pageNum = i;
+        wrapper.innerHTML = `<div style="color:var(--muted); font-size:0.8rem;">Memuat halaman ${i}...</div>`;
+        
+        container.appendChild(wrapper);
+        pageWrappers.push(wrapper);
+      }
+
+      // 2. Gunakan Intersection Observer untuk merender HANYA saat terlihat di layar
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const wrapper = entry.target;
+            if (wrapper.dataset.rendered) return;
+            wrapper.dataset.rendered = 'true';
+            this.renderSinglePage(pdf, parseInt(wrapper.dataset.pageNum), wrapper);
+            observer.unobserve(wrapper);
+          }
+        });
+      }, { root: container, rootMargin: '300px' }); // 300px = mulai render 1 layar sebelum masuk
+
+      pageWrappers.forEach(w => observer.observe(w));
 
     } catch (err) {
-      console.error('Blob PDF Error:', err);
-      this.dom.vLoadingText.textContent = 'Gagal memuat. Beralih ke mode cadangan...';
-      setTimeout(() => this.initDriveFallback(), 1000);
+      console.error('Custom PDF Error:', err);
+      this.showError('Gagal memuat PDF: ' + err.message);
     }
   }
 
-  initDriveFallback() {
-    const html = `
-      <iframe src="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/preview?rm=minimal"
-              allow="autoplay; encrypted-media; fullscreen" allowfullscreen
-              referrerpolicy="no-referrer"></iframe>`;
-    this.mountMedia(html);
+  // Fungsi pembantu untuk merender satu halaman ke dalam Canvas
+  async renderSinglePage(pdf, pageNum, wrapper) {
+    try {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.5 }); // Kualitas HD tapi hemat memori
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      
+      // Pastikan canvas mengisi wrapper dengan benar
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.objectFit = 'contain';
+      
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      
+      wrapper.innerHTML = ''; // Hapus tulisan "Memuat..."
+      wrapper.appendChild(canvas);
+    } catch (err) {
+      console.error('Render single page error:', err);
+      wrapper.innerHTML = `<div style="color:red; font-size:0.8rem;">Gagal memuat gambar</div>`;
+    }
   }
 
+  /* ==========================================================
+     MODE LAINNYA (Video, YouTube, Audio, Link)
+     ========================================================== */
   initVideo() {
     const html = `
       <iframe src="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/preview"
@@ -472,6 +569,17 @@ class ViewerEngine {
         document.exitFullscreen?.();
         this.dom.fullscreenIcon.innerHTML = '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>';
       }
+    });
+  }
+
+  loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Gagal memuat script: ' + src));
+      document.head.appendChild(s);
     });
   }
 
