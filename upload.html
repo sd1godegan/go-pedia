@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unggah Media · Go-pedia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================
+   TOKENS — SINKRON DENGAN INDEX.HTML
+   ========================================================== */
+:root {
+  --bg:#faf8f5; --surface:#fff; --surface-2:#f5f2ec; --border:#ece7de;
+  --text:#2e2e3f; --text-soft:#5a5a70; --muted:#8e8ea0;
+  --primary:#8899c4; --primary-hover:#7386b5;
+  --primary-soft:#edf0f8; --primary-ring:#dde4f2;
+  --sage:#c8d9c8; --sage-ink:#4a5d4a;
+  --peach:#f7dec8; --peach-ink:#7a4a35;
+  --lavender:#e0d7ee; --lav-ink:#5a4a6b;
+  --rose:#f5cfd4; --rose-ink:#7a3a44;
+  --butter:#f5ebc8; --butter-ink:#7a6b35;
+  --radius:12px; --radius-lg:16px;
+  --shadow-md:0 6px 20px rgba(46,46,63,.08);
+}
+[data-theme="dark"] {
+  --bg:#1c1c28; --surface:#24242f; --surface-2:#2a2a38; --border:#35353f;
+  --text:#eceaf2; --text-soft:#b8b6c8; --muted:#8e8ca0;
+  --primary:#98a8d0; --primary-hover:#8899c4;
+  --primary-soft:#2e3245; --primary-ring:#3a4058;
+  --sage:#3a4a3a; --sage-ink:#a8d0a8;
+  --peach:#4a3a2e; --peach-ink:#f0c8a8;
+  --lavender:#3a3248; --lav-ink:#c8b8e0;
+  --rose:#4a3238; --rose-ink:#e8b8c0;
+  --butter:#4a4228; --butter-ink:#e8d8a0;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.55;
+  min-height:100vh; padding:2rem 1rem; -webkit-font-smoothing:antialiased;
+}
+button, input, select, textarea { font:inherit; color:inherit; }
+button { cursor:pointer; border:none; background:none; }
+a { color:var(--primary); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.hidden { display:none !important; }
+
+.container { max-width:760px; margin:0 auto; }
+
+/* HEADER */
+.header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:2rem; gap:1rem;
+}
+.brand { display:flex; align-items:center; gap:.75rem; }
+.brand-mark {
+  width:44px; height:44px; border-radius:12px;
+  background:var(--primary-soft); color:var(--primary);
+  display:grid; place-items:center;
+}
+.brand-mark svg { width:24px; height:24px; }
+.brand-text h1 { font-size:1.1rem; font-weight:800; line-height:1.15; }
+.brand-text p { font-size:.75rem; color:var(--muted); }
+.btn-back {
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:.55rem 1rem; border-radius:10px;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text-soft); font-weight:600; font-size:.85rem; transition:all .15s;
+}
+.btn-back:hover { background:var(--primary-soft); color:var(--primary); text-decoration:none; }
+
+/* CARD & FORM */
+.card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:2rem; box-shadow:var(--shadow-md);
+}
+.card h2 { font-size:1.3rem; font-weight:800; margin-bottom:.35rem; }
+.card .sub { font-size:.85rem; color:var(--muted); margin-bottom:1.75rem; }
+
+.field { margin-bottom:1.1rem; }
+.field label {
+  display:block; font-size:.8rem; font-weight:700;
+  color:var(--text-soft); margin-bottom:.4rem;
+}
+.field label .req { color:var(--rose-ink); margin-left:.15rem; }
+.field input, .field select, .field textarea {
+  width:100%; padding:.7rem .9rem;
+  border:1.5px solid var(--border); border-radius:10px;
+  background:var(--surface-2); color:var(--text);
+  outline:none; transition:all .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color:var(--primary); background:var(--surface);
+  box-shadow:0 0 0 3px var(--primary-ring);
+}
+.field textarea { resize:vertical; min-height:80px; }
+.field small { display:block; font-size:.72rem; color:var(--muted); margin-top:.35rem; }
+
+.row { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
+@media (max-width:600px) { .row { grid-template-columns:1fr; } }
+
+/* SOURCE TABS (File / Link) */
+.source-tabs {
+  display:inline-flex; padding:.25rem;
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:10px; margin-bottom:.85rem;
+}
+.source-tabs button {
+  padding:.45rem 1rem; border-radius:8px; font-size:.8rem;
+  font-weight:700; color:var(--text-soft); transition:all .15s;
+}
+.source-tabs button.active {
+  background:var(--surface); color:var(--primary);
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+
+/* FILE DROPZONE */
+.file-drop {
+  border:2px dashed var(--border); border-radius:12px;
+  padding:2rem 1.5rem; text-align:center; cursor:pointer;
+  transition:all .2s; background:var(--surface-2); display:block;
+}
+.file-drop:hover, .file-drop.drag { border-color:var(--primary); background:var(--primary-soft); }
+.file-drop-icon {
+  width:52px; height:52px; border-radius:14px;
+  background:var(--primary-soft); color:var(--primary);
+  display:grid; place-items:center; margin:0 auto .75rem;
+}
+.file-drop p { font-size:.85rem; font-weight:600; color:var(--text); margin-bottom:.25rem; }
+.file-drop small { font-size:.72rem; color:var(--muted); }
+.file-drop input[type="file"] { display:none; }
+
+.file-selected {
+  display:flex; align-items:center; gap:.75rem;
+  padding:.75rem 1rem; background:var(--sage);
+  border-radius:10px; font-size:.85rem; color:var(--sage-ink);
+}
+.file-selected svg { flex-shrink:0; }
+.file-selected .name { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-selected .size { font-size:.72rem; opacity:.8; }
+.file-selected button {
+  padding:.25rem .5rem; border-radius:6px; font-size:.72rem;
+  background:transparent; border:1px solid currentColor;
+  color:inherit; cursor:pointer;
+}
+
+/* BUTTONS */
+.btn-submit {
+  width:100%; padding:.9rem 1rem; border-radius:12px;
+  background:var(--primary); color:#fff;
+  font-size:.92rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; gap:.5rem;
+  transition:all .15s; margin-top:1rem;
+}
+.btn-submit:hover:not(:disabled) { background:var(--primary-hover); transform:translateY(-1px); }
+.btn-submit:disabled { opacity:.6; cursor:wait; }
+
+/* ALERTS */
+.alert {
+  padding:.9rem 1rem; border-radius:10px; font-size:.85rem;
+  margin-bottom:1rem; display:flex; align-items:flex-start; gap:.6rem;
+}
+.alert.error { background:var(--rose); color:var(--rose-ink); border:1px solid currentColor; }
+.alert.success { background:var(--sage); color:var(--sage-ink); border:1px solid currentColor; }
+.alert strong { font-weight:800; }
+
+/* PERMALINK BOX */
+.permalink-box {
+  background:var(--surface-2); border:2px solid var(--sage);
+  border-radius:12px; padding:1rem 1.25rem; margin:1rem 0 1.5rem;
+}
+.permalink-box label {
+  font-size:.72rem; font-weight:800; color:var(--sage-ink);
+  text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:.5rem;
+}
+.permalink-row { display:flex; gap:.5rem; align-items:stretch; }
+.permalink-input {
+  flex:1; padding:.6rem .85rem; background:var(--surface);
+  border:1px solid var(--border); border-radius:8px;
+  font-family:monospace; font-size:.75rem; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.permalink-copy {
+  padding:0 1rem; border-radius:8px; background:var(--primary);
+  color:#fff; font-weight:700; font-size:.8rem;
+  display:flex; align-items:center; gap:.35rem; transition:background .15s;
+}
+.permalink-copy:hover { background:var(--primary-hover); }
+.permalink-copy.copied { background:var(--sage-ink); }
+.permalink-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; }
+.permalink-actions a {
+  display:inline-flex; align-items:center; gap:.35rem;
+  padding:.5rem .85rem; border-radius:8px; font-size:.8rem; font-weight:700;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text-soft); transition:all .15s;
+}
+.permalink-actions a:hover { background:var(--primary-soft); color:var(--primary); text-decoration:none; }
+
+/* SPINNER */
+.spinner {
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid rgba(255,255,255,.3); border-top-color:#fff;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* LOGIN REQUIRED */
+.login-required { text-align:center; padding:3rem 1rem; }
+.login-required h2 { margin-bottom:.5rem; }
+.login-required p { color:var(--muted); margin-bottom:1.5rem; }
+
+.toast {
+  position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(120px);
+  background:var(--text); color:var(--bg); padding:.7rem 1.2rem; border-radius:10px;
+  font-size:.85rem; font-weight:600; box-shadow:var(--shadow-md); z-index:999; transition:transform .3s;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>Unggah Media</h1>
+        <p>Go-pedia · Pustaka Media</p>
+      </div>
+    </div>
+    <a href="index.html" class="btn-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Katalog
+    </a>
+  </header>
+
+  <!-- LOGIN GUARD -->
+  <div id="loginRequired" class="card login-required hidden">
+    <h2>Akses Ditolak</h2>
+    <p>Anda harus masuk sebagai guru untuk mengunggah media.</p>
+    <a href="index.html" class="btn-submit" style="max-width:240px; margin:0 auto; text-decoration:none;">
+      Kembali & Masuk
+    </a>
+  </div>
+
+  <!-- FORM UPLOAD -->
+  <div id="formCard" class="card hidden">
+    <h2>Tambah Media Baru</h2>
+    <p class="sub">Isi data di bawah dengan lengkap. Setelah sukses, media akan otomatis mendapatkan URL permanen.</p>
+
+    <div id="alertBox" class="hidden"></div>
+
+    <form id="uploadForm">
+      <div class="field">
+        <label for="judul">Judul Media <span class="req">*</span></label>
+        <input type="text" id="judul" required maxlength="150" placeholder="Mis: Video Siklus Air">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="tipe">Tipe Media <span class="req">*</span></label>
+          <select id="tipe" required>
+            <option value="">— Pilih —</option>
+            <option>Video</option>
+            <option>Ebook</option>
+            <option>LKPD</option>
+            <option>Audio</option>
+            <option>Poster</option>
+            <option>Link</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="kategori">Kategori</label>
+          <select id="kategori">
+            <option value="Pembelajaran">Pembelajaran</option>
+            <option value="Literasi">Literasi</option>
+            <option value="Numerasi">Numerasi</option>
+            <option value="Alat Peraga">Alat Peraga</option>
+            <option value="Lagu">Lagu</option>
+            <option value="P5">P5 (Projek)</option>
+            <option value="Administrasi">Administrasi</option>
+            <option value="Umum">Umum</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="mapel">Mata Pelajaran</label>
+          <select id="mapel">
+            <option value="">— Tidak terikat —</option>
+            <option>Pendidikan Agama dan Budi Pekerti</option>
+            <option>Pendidikan Pancasila</option>
+            <option>Bahasa Indonesia</option>
+            <option>Matematika</option>
+            <option>IPAS (Ilmu Pengetahuan Alam & Sosial)</option>
+            <option>PJOK</option>
+            <option>Seni Budaya (Rupa/Musik/Tari/Teater)</option>
+            <option>Bahasa Inggris</option>
+            <option>Bahasa Jawa (Mulok)</option>
+            <option>Umum / Lainnya</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="kelas">Kelas</label>
+          <select id="kelas">
+            <option value="Semua">Umum (lintas kelas)</option>
+            <option value="1">Kelas 1</option>
+            <option value="2">Kelas 2</option>
+            <option value="3">Kelas 3</option>
+            <option value="4">Kelas 4</option>
+            <option value="5">Kelas 5</option>
+            <option value="6">Kelas 6</option>
+            <option value="1,2,3">Fase A (1–3)</option>
+            <option value="4,5,6">Fase B/C (4–6)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field hidden">
+        <label for="jenjang">Jenjang</label>
+        <input type="text" id="jenjang" value="SD" readonly>
+      </div>
+
+      <div class="field">
+        <label for="deskripsi">Deskripsi Singkat</label>
+        <textarea id="deskripsi" maxlength="500" placeholder="Jelaskan secara singkat isi media ini..."></textarea>
+      </div>
+
+      <!-- SUMBER MEDIA -->
+      <div class="field">
+        <label>Sumber Media <span class="req">*</span></label>
+        <div class="source-tabs">
+          <button type="button" id="tabFile" class="active">Unggah File</button>
+          <button type="button" id="tabLink">Tempel Link</button>
+        </div>
+
+        <!-- Pane File -->
+        <div id="paneFile">
+          <label for="fileInput" class="file-drop" id="fileDrop">
+            <div class="file-drop-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <p>Klik atau seret file ke sini</p>
+            <small>PDF, DOCX, JPG, MP3, MP4 — maks 25 MB</small>
+            <input type="file" id="fileInput">
+          </label>
+          <div id="fileSelected" class="file-selected hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+            <span class="name" id="fileName"></span>
+            <span class="size" id="fileSize"></span>
+            <button type="button" id="fileRemove">Hapus</button>
+          </div>
+        </div>
+
+        <!-- Pane Link -->
+        <div id="paneLink" class="hidden">
+          <input type="url" id="linkInput" placeholder="https://youtube.com/watch?v=... atau URL lain">
+          <small>Untuk video YouTube, tempel URL lengkap. Viewer akan otomatis mendeteksi.</small>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btnSubmit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Unggah Sekarang</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+const API_URL  = 'https://script.google.com/macros/s/AKfycbzsCStKIS9V6qFNeGqhI1jhZLXbd-AmTFsF17SOCb8Gh0RoIZv6eiGK_PsTWHNomfXU/exec';
+const TOKEN_KEY = 'gopedia_token';
+const NAME_KEY  = 'gopedia_nama';
+const THEME_KEY = 'gopedia_theme';
+
+const $ = (s) => document.querySelector(s);
+
+const state = {
+  token: localStorage.getItem(TOKEN_KEY) || '',
+  nama:  localStorage.getItem(NAME_KEY)  || '',
+  source: 'file',
+  file: null,
+};
+
+/* TEMA */
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) document.documentElement.dataset.theme = saved;
+  else if (matchMedia('(prefers-color-scheme: dark)').matches)
+    document.documentElement.dataset.theme = 'dark';
+})();
+
+/* CEK LOGIN */
+if (!state.token) {
+  $('#loginRequired').classList.remove('hidden');
+} else {
+  $('#formCard').classList.remove('hidden');
+}
+
+/* HELPERS */
+function showAlert(kind, html) {
+  const el = $('#alertBox');
+  el.className = `alert ${kind}`;
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function hideAlert() { $('#alertBox').classList.add('hidden'); }
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* TABS (FILE / LINK) */
+$('#tabFile').addEventListener('click', () => {
+  state.source = 'file';
+  $('#tabFile').classList.add('active');
+  $('#tabLink').classList.remove('active');
+  $('#paneFile').classList.remove('hidden');
+  $('#paneLink').classList.add('hidden');
+});
+$('#tabLink').addEventListener('click', () => {
+  state.source = 'link';
+  $('#tabLink').classList.add('active');
+  $('#tabFile').classList.remove('active');
+  $('#paneLink').classList.remove('hidden');
+  $('#paneFile').classList.add('hidden');
+});
+
+/* FILE HANDLING */
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+$('#fileInput').addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+['dragenter','dragover'].forEach(ev => {
+  $('#fileDrop').addEventListener(ev, (e) => {
+    e.preventDefault(); $('#fileDrop').classList.add('drag');
+  });
+});
+['dragleave','drop'].forEach(ev => {
+  $('#fileDrop').addEventListener(ev, (e) => {
+    e.preventDefault(); $('#fileDrop').classList.remove('drag');
+  });
+});
+$('#fileDrop').addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  if (file.size > MAX_FILE_BYTES) {
+    toast(`File terlalu besar (maks 25 MB).`);
+    return;
+  }
+  state.file = file;
+  $('#fileName').textContent = file.name;
+  $('#fileSize').textContent = formatSize(file.size);
+  $('#fileSelected').classList.remove('hidden');
+  $('#fileDrop').classList.add('hidden');
+}
+
+$('#fileRemove').addEventListener('click', () => {
+  state.file = null;
+  $('#fileInput').value = '';
+  $('#fileSelected').classList.add('hidden');
+  $('#fileDrop').classList.remove('hidden');
+});
+
+function formatSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(2) + ' MB';
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+/* SUBMIT UPLOAD */
+$('#uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert();
+
+  const judul     = $('#judul').value.trim();
+  const tipe      = $('#tipe').value;
+  const kategori  = $('#kategori').value;
+  const mapel     = $('#mapel').value;
+  const kelas     = $('#kelas').value;
+  const jenjang   = $('#jenjang').value;
+  const deskripsi = $('#deskripsi').value.trim();
+  const linkExt   = $('#linkInput').value.trim();
+
+  if (!judul || !tipe) { toast('Judul dan Tipe wajib diisi.'); return; }
+  if (state.source === 'file' && !state.file) { toast('Pilih file untuk diunggah.'); return; }
+  if (state.source === 'link' && !linkExt) { toast('Tempel URL tautan.'); return; }
+
+  const payload = {
+    action: 'upload',
+    token: state.token,
+    judul, tipe, kategori, mapel, kelas, jenjang, deskripsi,
+    linkEksternal: state.source === 'link' ? linkExt : '',
+  };
+
+  // Proses File ke Base64
+  if (state.source === 'file' && state.file) {
+    $('#btnSubmit').disabled = true;
+    $('#btnSubmit').innerHTML = `<span class="spinner"></span><span>Membaca file...</span>`;
+    try {
+      payload.fileBase64 = await toBase64(state.file);
+      payload.fileName   = state.file.name;
+      payload.mimeType   = state.file.type || 'application/octet-stream';
+    } catch (err) {
+      showAlert('error', `<strong>Gagal membaca file:</strong> ${err.message}`);
+      resetButton(); return;
+    }
+  }
+
+  $('#btnSubmit').innerHTML = `<span class="spinner"></span><span>Mengunggah...</span>`;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      showAlert('error', `<strong>Gagal mengunggah:</strong> ${errorMessage(data.error)}`);
+      if (data.error === 'sesi_habis') {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(NAME_KEY);
+      }
+      resetButton(); return;
+    }
+
+    // === SUKSES ===
+    const permalink = buildPermalink(data.id);
+    showPermalink(data, permalink);
+    toast('Media berhasil diunggah ✓');
+    resetForm();
+  } catch (err) {
+    showAlert('error', `<strong>Koneksi gagal:</strong> ${err.message}`);
+  } finally {
+    resetButton();
+  }
+});
+
+/* BUILD PERMALINK & SUKSES UI */
+function buildPermalink(itemId) {
+  const base = window.location.origin + window.location.pathname.replace(/upload\.html.*$/, '');
+  return `${base}viewer.html?id=${encodeURIComponent(itemId)}`;
+}
+
+function showPermalink(data, permalink) {
+  const box = $('#alertBox');
+  box.className = 'alert success';
+  box.innerHTML = `
+    <div style="width:100%">
+      <strong>✓ Media berhasil diunggah</strong>
+      <div class="permalink-box" style="margin-top:.9rem;">
+        <label>URL Permanen Media</label>
+        <div class="permalink-row">
+          <input class="permalink-input" id="permalinkInput" readonly value="${permalink}">
+          <button type="button" class="permalink-copy" id="btnCopy">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Salin
+          </button>
+        </div>
+        <div class="permalink-actions">
+          <a href="${permalink}" target="_blank">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            Buka Viewer
+          </a>
+          <a href="index.html">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            Lihat Katalog
+          </a>
+        </div>
+      </div>
+    </div>`;
+
+  box.classList.remove('hidden');
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  $('#btnCopy').addEventListener('click', () => {
+    navigator.clipboard.writeText(permalink).then(() => {
+      const btn = $('#btnCopy');
+      btn.classList.add('copied');
+      btn.innerHTML = '✓ Tersalin';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `Salin`;
+      }, 2000);
+    }).catch(() => {
+      const inp = $('#permalinkInput');
+      inp.select();
+      document.execCommand('copy');
+      toast('URL Tersalin');
+    });
+  });
+}
+
+function resetForm() {
+  $('#uploadForm').reset();
+  state.file = null;
+  $('#fileSelected').classList.add('hidden');
+  $('#fileDrop').classList.remove('hidden');
+  $('#tabFile').click();
+}
+
+function resetButton() {
+  $('#btnSubmit').disabled = false;
+  $('#btnSubmit').innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <span>Unggah Sekarang</span>`;
+}
+
+function errorMessage(code) {
+  const map = {
+    sesi_habis: 'Sesi login habis, silakan login ulang.',
+    data_tidak_lengkap: 'Judul dan Tipe wajib diisi.',
+    file_terlalu_besar: 'File terlalu besar (maks 25 MB).',
+    file_atau_link_kosong: 'Pilih file atau isi tautan.',
+    drive_error: 'Gagal menyimpan ke Google Drive.',
+    sheet_katalog_tidak_ada: 'Sheet Katalog tidak ditemukan.',
+    network_error: 'Koneksi terputus, periksa internet Anda.'
+  };
+  return map[code] || code || 'unknown error';
+}
+</script>
+</body>
+</html>
