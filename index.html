@@ -387,8 +387,8 @@ a:hover { text-decoration:underline; }
 </head>
 <body>
 
-<!-- LAYER 1: LANDING PAGE -->
-<div id="landingView" class="hidden">
+<!-- LAYER 1: LANDING PAGE (Tidak menggunakan class hidden secara default) -->
+<div id="landingView">
   <div class="landing-bg-1"></div>
   <div class="landing-bg-2"></div>
 
@@ -417,7 +417,7 @@ a:hover { text-decoration:underline; }
   </div>
 </div>
 
-<!-- LAYER 2: APLIKASI UTAMA -->
+<!-- LAYER 2: APLIKASI UTAMA (Disembunyikan secara default) -->
 <div id="appView" class="hidden">
 
   <header class="topbar">
@@ -597,7 +597,7 @@ const state = {
   limit: PAGE_SIZE,
   loading: false,
   hasLoaded: false,
-  reqSeq: 0 // Mencegah Race Condition
+  reqSeq: 0
 };
 
 /* HELPERS */
@@ -663,9 +663,13 @@ function enterCatalog() {
   }
 }
 
-// Jika sudah pernah masuk, langsung tampilkan katalog
+// CEK KUNJUNGAN: Jika sudah pernah masuk, lewati landing page
 if (localStorage.getItem(VISIT_KEY) === 'true') {
   enterCatalog();
+} else {
+  // Jika baru pertama kali, pastikan Landing Page muncul
+  $('#landingView').classList.remove('hidden');
+  $('#appView').classList.add('hidden');
 }
 
 $('#btnExplore').addEventListener('click', enterCatalog);
@@ -887,7 +891,6 @@ async function gotoPage(page) {
   try {
     const r = await apiGet(params);
     
-    // Jika ada request baru yang masuk sebelum request ini selesai, abaikan hasil ini
     if (reqId !== state.reqSeq) return;
 
     if (!r.ok) { toast('Gagal memuat katalog.'); renderState('error'); return; }
@@ -910,7 +913,7 @@ async function gotoPage(page) {
 function loadCatalog(reset = true) {
   const page = reset ? 0 : (state.currentPage || 0);
   gotoPage(page);
-  toggleSidebar(false); // Tutup sidebar di mobile setelah memilih filter
+  toggleSidebar(false);
 }
 
 /* RENDER */
