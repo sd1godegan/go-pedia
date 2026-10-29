@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ==========================================================
-   TOKENS
+   TOKENS — SINKRON DENGAN INDEX.HTML
    ========================================================== */
 :root {
   --bg:#faf8f5; --surface:#fff; --surface-2:#f5f2ec; --border:#ece7de;
@@ -35,14 +35,16 @@
 body {
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg); color:var(--text); line-height:1.5;
-  -webkit-font-smoothing:antialiased; height:100vh; overflow:hidden;
+  -webkit-font-smoothing:antialiased; height:100dvh; overflow:hidden;
   display:flex; flex-direction:column;
 }
 button { font:inherit; color:inherit; cursor:pointer; border:none; background:none; }
 a { color:var(--primary); text-decoration:none; }
 .hidden { display:none !important; }
 
-/* HEADER */
+/* ==========================================================
+   HEADER
+   ========================================================== */
 .v-header {
   height:var(--header-h); flex-shrink:0;
   display:flex; align-items:center; justify-content:space-between; gap:1rem;
@@ -81,7 +83,9 @@ a { color:var(--primary); text-decoration:none; }
 .btn-back:hover { background:var(--primary-hover); text-decoration:none; }
 .btn-back svg { width:14px; height:14px; }
 
-/* MAIN & FRAME */
+/* ==========================================================
+   MAIN & FRAME
+   ========================================================== */
 .v-main {
   flex:1; position:relative; overflow:hidden;
   display:flex; align-items:center; justify-content:center;
@@ -96,11 +100,13 @@ a { color:var(--primary); text-decoration:none; }
   display:flex; align-items:center; justify-content:center;
   padding:0; overflow:hidden;
 }
-.v-frame.frame-media { background:#525659; } 
+.v-frame.frame-media { background:#525659; } /* Warna latar PDF Reader */
 .v-stage:fullscreen { max-width:100%; padding:0; background:#000; }
 .v-stage:fullscreen .v-frame { border-radius:0; border:none; }
 
-/* CUSTOM PDF CONTAINER */
+/* ==========================================================
+   CUSTOM PDF CONTAINER (SCROLLABLE & PROPORSIONAL)
+   ========================================================== */
 .pdf-container {
   width: 100%;
   height: 100%;
@@ -113,22 +119,23 @@ a { color:var(--primary); text-decoration:none; }
   gap: 15px;
   background: #525659;
 }
-
 .pdf-page {
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   width: 100%;
-  max-width: 850px;
+  max-width: 850px; /* Lebar maksimal seperti kertas A4 di layar */
   border-radius: 2px;
 }
-
+/* Canvas harus 100% dari pembungkusnya, height auto menjaga rasio */
 .pdf-page canvas {
   display: block;
   width: 100%;
   height: auto;
 }
 
-/* IFRAME & EMBED (PDF Native / Video) */
+/* ==========================================================
+   IFRAME & EMBED (YouTube, Video, Native PDF Fallback)
+   ========================================================== */
 .v-frame iframe, .v-frame embed {
   width: 100%;
   height: 100%;
@@ -136,7 +143,48 @@ a { color:var(--primary); text-decoration:none; }
   display: block;
 }
 
-/* LOADING & FOOTER */
+/* ==========================================================
+   AUDIO & EXTERNAL CARDS
+   ========================================================== */
+.audio-card {
+  width:100%; max-width:520px; background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:2rem 1.75rem; text-align:center; box-shadow:var(--shadow-md);
+  margin: 1rem;
+}
+.audio-cover {
+  width:160px; height:160px; margin:0 auto 1.5rem; border-radius:50%;
+  background:linear-gradient(135deg, var(--lavender) 0%, var(--primary-soft) 100%);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--lav-ink); box-shadow:0 10px 30px rgba(136,153,196,.25);
+  animation:audio-pulse 2.4s ease-in-out infinite;
+}
+.audio-cover svg { width:64px; height:64px; }
+@keyframes audio-pulse { 0%, 100% { transform:scale(1); } 50% { transform:scale(1.04); } }
+.audio-title { font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:.35rem; line-height:1.3; }
+.audio-subtitle { font-size:.8rem; color:var(--muted); margin-bottom:1.25rem; }
+.audio-card audio { width:100%; margin-top:.5rem; outline:none; }
+
+.external-card {
+  width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:2.25rem 1.75rem; text-align:center; box-shadow:var(--shadow-md);
+  margin: 1rem;
+}
+.external-icon {
+  width:80px; height:80px; border-radius:22px; background:var(--primary-soft);
+  color:var(--primary); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;
+}
+.external-icon svg { width:36px; height:36px; }
+.external-card h2 { font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:.5rem; line-height:1.3; }
+.external-card p { font-size:.83rem; color:var(--text-soft); margin-bottom:1.5rem; line-height:1.6; }
+.btn-open-ext {
+  display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1.5rem; border-radius:10px;
+  background:var(--primary); color:#fff; font-weight:700; font-size:.85rem; transition:all .15s;
+}
+.btn-open-ext:hover { background:var(--primary-hover); text-decoration:none; transform:translateY(-1px); }
+
+/* ==========================================================
+   LOADING & FOOTER
+   ========================================================== */
 .v-loading {
   position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:1rem; z-index:15; padding:2rem; text-align:center; transition:opacity .3s;
@@ -149,6 +197,7 @@ a { color:var(--primary); text-decoration:none; }
 .v-footer {
   height:var(--footer-h); flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
   gap:1rem; padding:0 1rem; background:var(--surface); border-top:1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .v-author { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:var(--text-soft); min-width:0; }
 .v-author .av { width:28px; height:28px; border-radius:50%; background:var(--butter); color:var(--butter-ink); display:grid; place-items:center; font-size:.68rem; font-weight:800; flex-shrink:0; }
@@ -159,8 +208,10 @@ a { color:var(--primary); text-decoration:none; }
 .foot-btn.ghost:hover { background:var(--primary-soft); color:var(--primary); text-decoration:none; }
 .foot-btn svg { width:13px; height:13px; }
 
-/* RESPONSIVE */
-@media (max-width:640px) {
+/* ==========================================================
+   RESPONSIVE (MOBILE & TABLET)
+   ========================================================== */
+@media (max-width: 768px) {
   :root { --header-h:56px; --footer-h:52px; }
   .v-main { padding:0; }
   .v-stage { padding:0; }
@@ -171,8 +222,10 @@ a { color:var(--primary); text-decoration:none; }
   .btn-back { padding:.5rem; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
+  
+  /* PDF Mobile */
   .pdf-container { padding: 10px 0; gap: 10px; }
-  .pdf-page { width: 100%; max-width: 100%; border-radius: 0; }
+  .pdf-page { max-width: 100%; border-radius: 0; box-shadow: none; }
 }
 </style>
 </head>
@@ -288,8 +341,8 @@ class ViewerEngine {
       this.link = this.item.Link || '';
       this.format = this.detectFormat(this.item);
       
-      document.title = this.item.Judul + ' · Go-pedia';
-      this.dom.vTitle.textContent = this.item.Judul;
+      document.title = (this.item.Judul || 'Media') + ' · Go-pedia';
+      this.dom.vTitle.textContent = this.item.Judul || 'Media';
       this.dom.vFooter.hidden = false;
       
       this.renderFooter();
@@ -347,13 +400,13 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     RENDER CUSTOM PDF (Upgrade PDF.js v3 + Fallback)
+     RENDER CUSTOM PDF (Sequential + Native Fallback)
      ========================================================== */
   async initCustomPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
     
     try {
-      // 1. Load PDF.js VERSI TERBARU (3.11.174) untuk fix bug pattern
+      // Load PDF.js v3.11.174 (Anti Bug Pattern)
       await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -385,14 +438,14 @@ class ViewerEngine {
       this.dom.mediaContainer.appendChild(container);
       this.dom.vFrame.classList.add('frame-media');
 
-      // Hilangkan loading screen segera
+      // Hilangkan loading screen seketika
       this.dom.vLoading.style.opacity = '0';
       setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
 
-      // Render per halaman
+      // Proses Halaman 1 per 1
       for (let i = 1; i <= total; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
+        const viewport = page.getViewport({ scale: 1.5 }); // Render HD
         
         const wrapper = document.createElement('div');
         wrapper.className = 'pdf-page';
@@ -409,19 +462,20 @@ class ViewerEngine {
             viewport 
         }).promise;
 
+        // Jeda 10ms agar browser tidak freeze
         await new Promise(r => setTimeout(r, 10));
       }
 
     } catch (err) {
       console.error('Custom PDF Error:', err);
-      // KARENA ERROR PATTERN TERJADI, KITA FALLBACK KE NATIVE PDF CHROME
+      // KARENA ERROR, KITA FALLBACK KE NATIVE PDF CHROME (BEBAS BUG & CEPAT)
       this.dom.vLoadingText.textContent = 'Memuat penampil cadangan...';
-      setTimeout(() => this.initBlobNative(), 1000);
+      setTimeout(() => this.initNativePDF(), 1000);
     }
   }
 
-  // Metode cadangan: Native Blob URL (Bebas bug PDF.js, dibuka via mesin asli Chrome)
-  async initBlobNative() {
+  // Mode Cadangan: Native Blob URL (Dibuka via mesin asli Chrome/Edge)
+  async initNativePDF() {
     try {
       const res = await fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`);
       const data = await res.json();
@@ -440,7 +494,6 @@ class ViewerEngine {
       `;
       
       this.mountMedia(html);
-
     } catch (err) {
       console.error('Blob Native Error:', err);
       this.showError('Gagal memuat PDF: ' + err.message);
@@ -505,6 +558,9 @@ class ViewerEngine {
     this.mountMedia(html);
   }
 
+  /* ==========================================================
+     UTILS
+     ========================================================== */
   mountMedia(html) {
     this.dom.mediaContainer.innerHTML = html;
     this.dom.vFrame.classList.add('frame-media');
