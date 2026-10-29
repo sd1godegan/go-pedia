@@ -105,45 +105,45 @@ a { color:var(--primary); text-decoration:none; }
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px 10px;
+  overflow-x: auto;
+  background: #525659;
+  scroll-behavior: smooth;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 20px 10px;
+  /* SOLUSI 1: Padding bawah extra agar teks terakhir tidak tertutup toolbar */
+  padding-bottom: 100px; 
   gap: 15px;
-  background: #525659;
-  scroll-behavior: smooth;
 }
 
 .pdf-page {
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   width: 100%;
-  max-width: 850px; /* Batas maksimal zoom 100% */
   border-radius: 2px;
   transition: max-width 0.2s ease;
 }
+.pdf-page canvas { display: block; width: 100%; height: auto; }
 
-.pdf-page canvas {
-  display: block;
-  width: 100%;
-  height: auto;
+/* Mode 2 Halaman */
+.pdf-container.view-2page {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
 }
 
-/* IFRAME & EMBED (YouTube, Video, Native PDF) */
-.v-frame iframe, .v-frame embed {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-}
+/* IFRAME & EMBED */
+.v-frame iframe, .v-frame embed { width: 100%; height: 100%; border: 0; display: block; }
 
 /* ==========================================================
-   FLOATING TOOLBAR (PDF CONTROLS)
+   FLOATING TOOLBAR & AUTO HIDE
    ========================================================== */
 .pdf-toolbar {
   position: absolute;
-  bottom: 20px;
+  bottom: 25px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.85);
@@ -153,83 +153,63 @@ a { color:var(--primary); text-decoration:none; }
   border-radius: 999px;
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 8px 20px;
+  gap: 12px;
+  padding: 8px 18px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   z-index: 100;
-  transition: opacity 0.3s;
+  
+  /* SOLUSI 2: Fitur Auto-Hide (Transisi mulus) */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  opacity: 1;
 }
-[data-theme="dark"] .pdf-toolbar {
-  background: rgba(36, 36, 47, 0.85);
+
+/* Class ini ditambahkan via JS saat user scroll ke bawah */
+.pdf-toolbar.toolbar-hidden {
+  transform: translateX(-50%) translateY(150%);
+  opacity: 0;
+  pointer-events: none;
 }
+
+[data-theme="dark"] .pdf-toolbar { background: rgba(36, 36, 47, 0.85); }
 .pdf-tool-btn {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; color: var(--text);
-  transition: background 0.2s;
+  border-radius: 50%; color: var(--text); transition: background 0.2s;
 }
 .pdf-tool-btn:hover { background: var(--surface-2); }
 .pdf-tool-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .pdf-tool-btn svg { width: 18px; height: 18px; }
-
 .pdf-tool-text {
   font-size: 0.85rem; font-weight: 700; color: var(--text);
-  min-width: 80px; text-align: center;
-  user-select: none;
+  min-width: 60px; text-align: center; user-select: none;
 }
+.pdf-tool-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 
 /* AUDIO & EXTERNAL CARDS */
-.audio-card {
-  width:100%; max-width:520px; background:var(--surface); border:1px solid var(--border);
-  border-radius:16px; padding:2rem 1.75rem; text-align:center; box-shadow:var(--shadow-md);
-  margin: 1rem;
-}
-.audio-cover {
-  width:160px; height:160px; margin:0 auto 1.5rem; border-radius:50%;
-  background:linear-gradient(135deg, var(--lavender) 0%, var(--primary-soft) 100%);
-  display:flex; align-items:center; justify-content:center;
-  color:var(--lav-ink); box-shadow:0 10px 30px rgba(136,153,196,.25);
-  animation:audio-pulse 2.4s ease-in-out infinite;
-}
+.audio-card { width:100%; max-width:520px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2rem 1.75rem; text-align:center; box-shadow:var(--shadow-md); margin: 1rem; }
+.audio-cover { width:160px; height:160px; margin:0 auto 1.5rem; border-radius:50%; background:linear-gradient(135deg, var(--lavender) 0%, var(--primary-soft) 100%); display:flex; align-items:center; justify-content:center; color:var(--lav-ink); box-shadow:0 10px 30px rgba(136,153,196,.25); animation:audio-pulse 2.4s ease-in-out infinite; }
 .audio-cover svg { width:64px; height:64px; }
 @keyframes audio-pulse { 0%, 100% { transform:scale(1); } 50% { transform:scale(1.04); } }
 .audio-title { font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:.35rem; line-height:1.3; }
 .audio-subtitle { font-size:.8rem; color:var(--muted); margin-bottom:1.25rem; }
 .audio-card audio { width:100%; margin-top:.5rem; outline:none; }
 
-.external-card {
-  width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border);
-  border-radius:16px; padding:2.25rem 1.75rem; text-align:center; box-shadow:var(--shadow-md);
-  margin: 1rem;
-}
-.external-icon {
-  width:80px; height:80px; border-radius:22px; background:var(--primary-soft);
-  color:var(--primary); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;
-}
+.external-card { width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2.25rem 1.75rem; text-align:center; box-shadow:var(--shadow-md); margin: 1rem; }
+.external-icon { width:80px; height:80px; border-radius:22px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; }
 .external-icon svg { width:36px; height:36px; }
 .external-card h2 { font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:.5rem; line-height:1.3; }
 .external-card p { font-size:.83rem; color:var(--text-soft); margin-bottom:1.5rem; line-height:1.6; }
-.btn-open-ext {
-  display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1.5rem; border-radius:10px;
-  background:var(--primary); color:#fff; font-weight:700; font-size:.85rem; transition:all .15s;
-}
+.btn-open-ext { display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1.5rem; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; font-size:.85rem; transition:all .15s; }
 .btn-open-ext:hover { background:var(--primary-hover); text-decoration:none; transform:translateY(-1px); }
 
 /* LOADING & FOOTER */
-.v-loading {
-  position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:1rem; z-index:15; padding:2rem; text-align:center; transition:opacity .3s;
-}
+.v-loading { position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem; z-index:15; padding:2rem; text-align:center; transition:opacity .3s; }
 .v-spinner { width:38px; height:38px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--primary); animation:spin .8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .v-loading-text { font-size:.85rem; font-weight:600; color:var(--text-soft); max-width:360px; }
 .v-error-text { color:var(--rose-ink); }
 
-.v-footer {
-  height:var(--footer-h); flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
-  gap:1rem; padding:0 1rem; background:var(--surface); border-top:1px solid var(--border);
-  padding-bottom: env(safe-area-inset-bottom);
-}
+.v-footer { height:var(--footer-h); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0 1rem; background:var(--surface); border-top:1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
 .v-author { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:var(--text-soft); min-width:0; }
 .v-author .av { width:28px; height:28px; border-radius:50%; background:var(--butter); color:var(--butter-ink); display:grid; place-items:center; font-size:.68rem; font-weight:800; flex-shrink:0; }
 .v-author .name { font-weight:700; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -251,12 +231,11 @@ a { color:var(--primary); text-decoration:none; }
   .btn-back { padding:.5rem; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
-  
-  .pdf-container { padding: 10px 0; gap: 10px; }
-  .pdf-page { max-width: 100%; border-radius: 0; box-shadow: none; }
-  
-  .pdf-toolbar { bottom: 15px; padding: 6px 15px; gap: 10px; }
-  .pdf-tool-text { min-width: 60px; font-size: 0.75rem; }
+  .pdf-container { padding: 10px 0 90px 0; gap: 10px; }
+  .pdf-container.view-2page { gap: 10px; }
+  .pdf-page { border-radius: 0; box-shadow: none; }
+  .pdf-toolbar { bottom: 15px; padding: 6px 12px; gap: 8px; }
+  .pdf-tool-text { min-width: 50px; font-size: 0.75rem; }
 }
 </style>
 </head>
@@ -306,7 +285,6 @@ a { color:var(--primary); text-decoration:none; }
   </div>
 
   <div class="v-stage" id="vStage" hidden>
-    <!-- Floating Toolbar for PDF -->
     <div class="pdf-toolbar hidden" id="pdfToolbar">
       <button class="pdf-tool-btn" id="btnPrevPage" title="Halaman Sebelumnya">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -316,7 +294,7 @@ a { color:var(--primary); text-decoration:none; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
       
-      <div style="width:1px; height:20px; background:var(--border); margin:0 5px;"></div>
+      <div class="pdf-tool-divider"></div>
 
       <button class="pdf-tool-btn" id="btnZoomOut" title="Perkecil">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -324,6 +302,14 @@ a { color:var(--primary); text-decoration:none; }
       <span class="pdf-tool-text" id="pdfZoomIndicator">100%</span>
       <button class="pdf-tool-btn" id="btnZoomIn" title="Perbesar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+
+      <div class="pdf-tool-divider"></div>
+
+      <button class="pdf-tool-btn" id="btnViewMode" title="Ubah Mode Tampilan">
+        <svg id="viewModeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/>
+        </svg>
       </button>
     </div>
 
@@ -354,11 +340,13 @@ class ViewerEngine {
     this.fileId = '';
     this.link = '';
     
-    // State PDF
     this.pdfTotalPages = 0;
     this.pdfCurrentPage = 1;
-    this.pdfZoomLevel = 100; // 100%
-    this.pdfBaseWidth = 850;
+    this.pdfZoomLevel = 100;
+    this.pdfViewMode = 1;
+
+    // State untuk Auto-Hide Toolbar
+    this.lastScrollTop = 0;
 
     this.dom = {
       vTitle: $('#vTitle'),
@@ -380,7 +368,9 @@ class ViewerEngine {
       pdfPageIndicator: $('#pdfPageIndicator'),
       btnZoomIn: $('#btnZoomIn'),
       btnZoomOut: $('#btnZoomOut'),
-      pdfZoomIndicator: $('#pdfZoomIndicator')
+      pdfZoomIndicator: $('#pdfZoomIndicator'),
+      btnViewMode: $('#btnViewMode'),
+      viewModeIcon: $('#viewModeIcon')
     };
   }
 
@@ -414,22 +404,11 @@ class ViewerEngine {
       this.renderFooter();
       
       switch (this.format) {
-        case 'pdf':
-          await this.initCustomPDF();
-          break;
-        case 'youtube':
-          this.initYouTube();
-          break;
-        case 'video':
-          this.initVideo();
-          break;
-        case 'audio':
-          this.initAudio();
-          break;
-        case 'external':
-        default:
-          this.initExternal();
-          break;
+        case 'pdf': await this.initCustomPDF(); break;
+        case 'youtube': this.initYouTube(); break;
+        case 'video': this.initVideo(); break;
+        case 'audio': this.initAudio(); break;
+        default: this.initExternal(); break;
       }
       
       this.dom.vLoading.style.opacity = '0';
@@ -465,9 +444,6 @@ class ViewerEngine {
     return 'external';
   }
 
-  /* ==========================================================
-     RENDER CUSTOM PDF & TOOLBAR LOGIC
-     ========================================================== */
   async initCustomPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
     
@@ -479,10 +455,7 @@ class ViewerEngine {
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       
       const data = await res.json();
-      
-      if (!data.ok || !data.content || data.content.length < 100) {
-        throw new Error('Isi PDF kosong atau rusak dari server.');
-      }
+      if (!data.ok || !data.content || data.content.length < 100) throw new Error('Isi PDF kosong atau rusak.');
 
       this.dom.vLoadingText.textContent = 'Memproses dokumen...';
       
@@ -504,16 +477,13 @@ class ViewerEngine {
       this.dom.mediaContainer.appendChild(container);
       this.dom.vFrame.classList.add('frame-media');
 
-      // Tampilkan Toolbar
       this.dom.pdfToolbar.classList.remove('hidden');
       this.updatePdfToolbar();
       this.setupPdfToolbarEvents();
 
-      // Hilangkan loading screen seketika
       this.dom.vLoading.style.opacity = '0';
       setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
 
-      // Render halaman
       for (let i = 1; i <= this.pdfTotalPages; i++) {
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.5 });
@@ -529,16 +499,17 @@ class ViewerEngine {
         wrapper.appendChild(canvas);
         container.appendChild(wrapper);
         
-        await page.render({ 
-            canvasContext: canvas.getContext('2d', { alpha: false }), 
-            viewport 
-        }).promise;
-
+        await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport }).promise;
         await new Promise(r => setTimeout(r, 10));
       }
 
-      // Listener untuk update indikator halaman saat di-scroll
-      container.addEventListener('scroll', () => this.trackPdfScroll());
+      this.updateViewMode();
+
+      // Event Listener Scroll: Track Halaman & Auto-Hide Toolbar
+      container.addEventListener('scroll', () => {
+        this.trackPdfScroll();
+        this.handleToolbarAutoHide(container.scrollTop);
+      });
 
     } catch (err) {
       console.error('Custom PDF Error:', err);
@@ -548,80 +519,82 @@ class ViewerEngine {
   }
 
   initNativePDF() {
-    this.dom.pdfToolbar.classList.add('hidden'); // Sembunyikan toolbar custom
+    this.dom.pdfToolbar.classList.add('hidden');
     try {
-      const res = fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`)
+      fetch(`${API_URL}?action=getfile&id=${encodeURIComponent(this.fileId)}&format=pdf`)
         .then(r => r.json())
         .then(data => {
           const cleanBase64 = data.content.replace(/\s/g, '');
           const binary = atob(cleanBase64);
           const bytes = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    
           const blob = new Blob([bytes], { type: 'application/pdf' });
           const pdfUrl = URL.createObjectURL(blob);
-    
-          const html = `
-            <embed src="${pdfUrl}" type="application/pdf" 
-                   style="width:100%; height:100%; border:none; background:#525659;">
-          `;
-          
-          this.mountMedia(html);
+          this.mountMedia(`<embed src="${pdfUrl}" type="application/pdf" style="width:100%; height:100%; border:none; background:#525659;">`);
         });
     } catch (err) {
-      console.error('Blob Native Error:', err);
       this.showError('Gagal memuat PDF: ' + err.message);
     }
   }
 
   /* ==========================================================
-     TOOLBAR ACTIONS (ZOOM & PAGES)
+     LOGIKA AUTO-HIDE TOOLBAR
      ========================================================== */
+  handleToolbarAutoHide(currentScrollTop) {
+    // Jika scroll ke bawah (membaca), sembunyikan toolbar
+    if (currentScrollTop > this.lastScrollTop && currentScrollTop > 50) {
+      this.dom.pdfToolbar.classList.add('toolbar-hidden');
+    } 
+    // Jika scroll ke atas, munculkan toolbar
+    else if (currentScrollTop < this.lastScrollTop) {
+      this.dom.pdfToolbar.classList.remove('toolbar-hidden');
+    }
+    this.lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
+  }
+
   setupPdfToolbarEvents() {
-    // Zoom In
     this.dom.btnZoomIn.onclick = () => {
-      if (this.pdfZoomLevel < 200) {
-        this.pdfZoomLevel += 25;
-        this.applyPdfZoom();
-      }
+      if (this.pdfZoomLevel < 200) { this.pdfZoomLevel += 25; this.applyPdfZoom(); }
     };
-    // Zoom Out
     this.dom.btnZoomOut.onclick = () => {
-      if (this.pdfZoomLevel > 50) {
-        this.pdfZoomLevel -= 25;
-        this.applyPdfZoom();
-      }
+      if (this.pdfZoomLevel > 50) { this.pdfZoomLevel -= 25; this.applyPdfZoom(); }
     };
-    
-    // Prev / Next Page
-    this.dom.btnPrevPage.onclick = () => {
-      this.scrollToPdfPage(this.pdfCurrentPage - 1);
-    };
-    this.dom.btnNextPage.onclick = () => {
-      this.scrollToPdfPage(this.pdfCurrentPage + 1);
+    this.dom.btnPrevPage.onclick = () => { this.scrollToPdfPage(this.pdfCurrentPage - 1); };
+    this.dom.btnNextPage.onclick = () => { this.scrollToPdfPage(this.pdfCurrentPage + 1); };
+    this.dom.btnViewMode.onclick = () => {
+      this.pdfViewMode = this.pdfViewMode === 1 ? 2 : 1;
+      this.updateViewMode();
     };
   }
 
   applyPdfZoom() {
     this.dom.pdfZoomIndicator.textContent = this.pdfZoomLevel + '%';
-    
-    // Hitung lebar baru berdasarkan persentase
-    const baseWidth = window.innerWidth < 768 ? window.innerWidth : 850;
-    const newWidth = (baseWidth * this.pdfZoomLevel) / 100;
+    const isMobile = window.innerWidth < 768;
+    const baseWidth1 = isMobile ? window.innerWidth - 20 : 850;
+    const baseWidth2 = isMobile ? (window.innerWidth - 30) / 2 : 425;
     
     document.querySelectorAll('.pdf-page').forEach(page => {
-      if (this.pdfZoomLevel <= 100) {
-        // Jika zoom out, kita perkecil max-width
-        page.style.maxWidth = newWidth + 'px';
-      } else {
-        // Jika zoom in, kita lebarkan melebihi 100% dan biarkan container scroll horizontal
-        page.style.maxWidth = newWidth + 'px';
-      }
+      page.style.maxWidth = this.pdfViewMode === 1 
+        ? (baseWidth1 * this.pdfZoomLevel / 100) + 'px'
+        : (baseWidth2 * this.pdfZoomLevel / 100) + 'px';
     });
 
-    // Update state tombol
     this.dom.btnZoomIn.disabled = this.pdfZoomLevel >= 200;
     this.dom.btnZoomOut.disabled = this.pdfZoomLevel <= 50;
+  }
+
+  updateViewMode() {
+    const container = $('#pdfContainer');
+    if (!container) return;
+
+    if (this.pdfViewMode === 1) {
+      container.classList.remove('view-2page');
+      this.dom.viewModeIcon.innerHTML = '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/>';
+    } else {
+      container.classList.add('view-2page');
+      this.dom.viewModeIcon.innerHTML = '<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>';
+    }
+    this.applyPdfZoom();
   }
 
   scrollToPdfPage(pageNum) {
@@ -629,6 +602,8 @@ class ViewerEngine {
     const target = document.querySelector(`.pdf-page[data-page-num="${pageNum}"]`);
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Munculkan toolbar saat pindah halaman
+      this.dom.pdfToolbar.classList.remove('toolbar-hidden');
     }
   }
 
@@ -643,8 +618,7 @@ class ViewerEngine {
     let minDistance = Infinity;
 
     pages.forEach(page => {
-      const rect = page.getBoundingClientRect();
-      const distance = Math.abs(rect.top - containerTop);
+      const distance = Math.abs(page.getBoundingClientRect().top - containerTop);
       if (distance < minDistance) {
         minDistance = distance;
         currentVisible = parseInt(page.dataset.pageNum);
@@ -664,65 +638,43 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     MODE LAINNYA (Video, YouTube, Audio, Link)
+     MODE LAINNYA
      ========================================================== */
   initVideo() {
     this.dom.pdfToolbar.classList.add('hidden');
-    const html = `
-      <iframe src="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/preview"
-              allow="autoplay; encrypted-media; fullscreen" allowfullscreen
-              referrerpolicy="no-referrer"></iframe>`;
-    this.mountMedia(html);
+    this.mountMedia(`<iframe src="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/preview" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe>`);
   }
 
   initYouTube() {
     this.dom.pdfToolbar.classList.add('hidden');
     const match = this.link.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
     const vid = match ? match[1] : '';
-    const html = `
-      <iframe src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?rel=0&modestbranding=1"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-              allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-    this.mountMedia(html);
+    this.mountMedia(`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`);
   }
 
   initAudio() {
     this.dom.pdfToolbar.classList.add('hidden');
-    const src = this.fileId 
-      ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(this.fileId)}` 
-      : this.link;
-      
-    const html = `
+    const src = this.fileId ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(this.fileId)}` : this.link;
+    this.mountMedia(`
       <div class="audio-card">
-        <div class="audio-cover">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-          </svg>
-        </div>
+        <div class="audio-cover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
         <div class="audio-title">${this.escapeHtml(this.item.Judul)}</div>
         <div class="audio-subtitle">Audio Pembelajaran</div>
         <audio controls preload="metadata" src="${src}"></audio>
-      </div>`;
-    this.mountMedia(html);
+      </div>`);
   }
 
   initExternal() {
     this.dom.pdfToolbar.classList.add('hidden');
     const url = this.link || this.params.get('url');
     if (!url) return this.showError('Tautan tidak ditemukan.');
-    const html = `
+    this.mountMedia(`
       <div class="external-card">
-        <div class="external-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-          </svg>
-        </div>
+        <div class="external-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
         <h2>${this.escapeHtml(this.item.Judul)}</h2>
         <p>Media ini berupa tautan eksternal yang tidak dapat ditampilkan langsung di halaman ini.</p>
         <a class="btn-open-ext" href="${this.escapeHtml(url)}" target="_blank" rel="noopener">Buka Tautan</a>
-      </div>`;
-    this.mountMedia(html);
+      </div>`);
   }
 
   /* ==========================================================
@@ -736,17 +688,10 @@ class ViewerEngine {
   renderFooter() {
     const name = (this.item.Pengunggah || '').split(' — ').pop() || 'Anonim';
     const initial = name.charAt(0).toUpperCase();
-    this.dom.vAuthor.innerHTML = `
-      <span class="av">${this.escapeHtml(initial)}</span>
-      <div><div class="name">${this.escapeHtml(name)}</div></div>`;
-
+    this.dom.vAuthor.innerHTML = `<span class="av">${this.escapeHtml(initial)}</span><div><div class="name">${this.escapeHtml(name)}</div></div>`;
     const actions = [];
     if (this.fileId) {
-      actions.push(`<a class="foot-btn ghost" href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-        </svg><span>Buka Drive</span></a>`);
+      actions.push(`<a class="foot-btn ghost" href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Buka Drive</span></a>`);
     }
     this.dom.vFooterActions.innerHTML = actions.join('');
   }
@@ -754,9 +699,7 @@ class ViewerEngine {
   setupTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved) document.documentElement.dataset.theme = saved;
-    else if (matchMedia('(prefers-color-scheme: dark)').matches)
-      document.documentElement.dataset.theme = 'dark';
-
+    else if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
     $('#btnTheme').addEventListener('click', () => {
       const cur = document.documentElement.dataset.theme;
       const next = cur === 'dark' ? 'light' : 'dark';
@@ -766,10 +709,7 @@ class ViewerEngine {
   }
 
   setupFullscreen() {
-    if (!document.fullscreenEnabled) {
-      this.dom.fullscreenBtn.style.display = 'none';
-      return;
-    }
+    if (!document.fullscreenEnabled) { this.dom.fullscreenBtn.style.display = 'none'; return; }
     this.dom.fullscreenBtn.addEventListener('click', () => {
       const el = this.dom.vStage;
       if (!document.fullscreenElement) {
@@ -786,17 +726,14 @@ class ViewerEngine {
     return new Promise((resolve, reject) => {
       if (document.querySelector(`script[src="${src}"]`)) return resolve();
       const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Gagal memuat script: ' + src));
+      s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Gagal memuat script: ' + src));
       document.head.appendChild(s);
     });
   }
 
   escapeHtml(s) {
     if (s == null) return '';
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   showError(msg) {
