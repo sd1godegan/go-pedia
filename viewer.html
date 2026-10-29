@@ -107,10 +107,10 @@ a { color:var(--primary); text-decoration:none; }
   width: 100%;
   height: 100%;
   background: #525659;
-  /* Flexbox untuk menengahkan konten */
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 /* 1. Mode Gulir (Scroll) */
@@ -118,46 +118,54 @@ a { color:var(--primary); text-decoration:none; }
   display: block;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 10px 100px 10px; /* Padding bawah untuk toolbar */
+  padding: 20px 10px 100px 10px;
 }
 .pdf-container.mode-scroll .pdf-spread { display: contents; }
 .pdf-container.mode-scroll .pdf-page {
   margin: 0 auto 15px auto;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-
-/* 2. Mode Slide (1 Halaman) & Buku (2 Halaman) - TERKUNCI */
-.pdf-container.mode-1page, 
-.pdf-container.mode-2page {
-  overflow: hidden; /* Kunci scroll total */
-  padding: 10px;
-  padding-bottom: 80px; /* Ruang aman untuk toolbar melayang */
-}
-
-/* Tampilan Halaman Aktif */
-.pdf-container.mode-1page .pdf-page,
-.pdf-container.mode-2page .pdf-spread {
-  display: none;
-}
-.pdf-container.mode-1page .pdf-page.active,
-.pdf-container.mode-2page .pdf-spread.active {
   display: flex;
   justify-content: center;
-  align-items: center;
+}
+
+/* 2. Mode Slide (1 Halaman Full) */
+.pdf-container.mode-1page {
+  overflow: hidden; /* Terkunci penuh di layar */
+  padding: 10px 10px 80px 10px; /* Jarak aman untuk toolbar */
+}
+.pdf-container.mode-1page .pdf-page {
+  display: none; /* Sembunyikan yang tidak aktif */
   width: 100%;
   height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.pdf-container.mode-1page .pdf-page.active {
+  display: flex;
 }
 
-/* Mode Buku (2 Halaman) */
+/* 3. Mode Buku (2 Halaman Full) */
+.pdf-container.mode-2page {
+  overflow: hidden;
+  padding: 10px 10px 80px 10px;
+}
 .pdf-container.mode-2page .pdf-spread {
-  gap: 10px;
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+.pdf-container.mode-2page .pdf-spread.active {
+  display: flex;
 }
 .pdf-container.mode-2page .pdf-page {
-  flex: 1; /* Masing-masing 50% */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  flex: 1; /* 50% - 50% */
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Gaya Kanvas PDF */
@@ -166,7 +174,7 @@ a { color:var(--primary); text-decoration:none; }
   max-height: 100%;
   width: auto;
   height: auto;
-  object-fit: contain; /* Pastikan gambar tidak gepeng */
+  object-fit: contain; /* Kunci agar tidak gepeng */
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   border-radius: 2px;
@@ -299,7 +307,7 @@ a { color:var(--primary); text-decoration:none; }
   .pdf-toolbar .pdf-tool-divider:nth-of-type(2) { display: none !important; }
 
   .pdf-container.mode-scroll { padding: 10px 0 90px 0; }
-  .pdf-container.mode-1page, .pdf-container.mode-2page { padding: 10px 0 70px 0; }
+  .pdf-container.mode-1page, .pdf-container.mode-2page { padding: 10px 10px 70px 10px; }
 }
 </style>
 </head>
@@ -649,19 +657,35 @@ class ViewerEngine {
     };
   }
 
-  // Menggunakan transform scale agar tidak merusak layout flex
+  // FUNGSI ZOOM: Menggunakan transform scale pada pembungkus
   applyPdfZoom() {
     this.dom.pdfZoomIndicator.textContent = this.pdfZoomLevel + '%';
     const scale = this.pdfZoomLevel / 100;
+    const container = $('#pdfContainer');
     
     document.querySelectorAll('.pdf-page').forEach(page => {
       page.style.transform = `scale(${scale})`;
+      
+      // Atur titik fokus zoom
       if (this.pdfViewMode === 'mode-scroll') {
         page.style.transformOrigin = 'top center';
       } else {
         page.style.transformOrigin = 'center center';
       }
     });
+
+    // Atur perilaku scrollbar saat di-zoom
+    if (this.pdfViewMode !== 'mode-scroll') {
+      if (scale > 1) {
+        container.style.overflow = 'auto';
+        container.style.justifyContent = 'flex-start';
+        container.style.alignItems = 'flex-start';
+      } else {
+        container.style.overflow = 'hidden';
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'center';
+      }
+    }
 
     this.dom.btnZoomIn.disabled = this.pdfZoomLevel >= 200;
     this.dom.btnZoomOut.disabled = this.pdfZoomLevel <= 50;
@@ -674,17 +698,26 @@ class ViewerEngine {
     container.classList.remove('mode-scroll', 'mode-1page', 'mode-2page');
     container.classList.add(this.pdfViewMode);
 
-    // Reset transform bawaan (jika ada)
+    // Reset transform
     document.querySelectorAll('.pdf-page').forEach(page => {
       page.style.transform = '';
     });
 
     if (this.pdfViewMode === 'mode-scroll') {
       this.dom.viewModeIcon.innerHTML = '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>';
+      container.style.overflow = 'auto';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
     } else if (this.pdfViewMode === 'mode-1page') {
       this.dom.viewModeIcon.innerHTML = '<rect x="6" y="3" width="12" height="18" rx="2"/>';
+      container.style.overflow = 'hidden';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
     } else {
       this.dom.viewModeIcon.innerHTML = '<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>';
+      container.style.overflow = 'hidden';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
     }
 
     this.applyPdfZoom();
