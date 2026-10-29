@@ -231,18 +231,15 @@ a:hover { text-decoration:underline; }
   .btn-back { width: 100%; justify-content: center; }
   
   .card { padding: 1.5rem 1.25rem; }
-  .row { grid-template-columns: 1fr; gap: 0; } /* Menumpuk form kiri-kanan */
+  .row { grid-template-columns: 1fr; gap: 0; }
   
-  /* File / Link Tabs */
   .source-tabs { flex-direction: row; }
   
-  /* Permalink Box di HP */
   .permalink-row { flex-direction: column; gap: 0.5rem; }
   .permalink-copy { padding: 0.8rem; width: 100%; }
   .permalink-actions { flex-direction: column; }
   .permalink-actions a { width: 100%; }
   
-  /* File Selected */
   .file-selected { flex-wrap: wrap; justify-content: center; text-align: center; }
   .file-selected .name { flex: 1 1 100%; white-space: normal; word-break: break-all; }
   .file-selected .size { flex: 1 1 auto; text-align: left; }
@@ -632,7 +629,8 @@ function showPermalink(data, permalink) {
           </button>
         </div>
         <div class="permalink-actions">
-          <a href="${permalink}" target="_blank">
+          <!-- PERBAIKAN: Buka Viewer tanpa target="_blank" -->
+          <a href="${permalink}">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
               <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
