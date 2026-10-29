@@ -96,7 +96,7 @@ a { color:var(--primary); text-decoration:none; }
   display:flex; align-items:center; justify-content:center;
   padding:0; overflow:hidden;
 }
-.v-frame.frame-media { background:#525659; } /* Warna latar PDF Reader */
+.v-frame.frame-media { background:#525659; } /* Latar PDF Reader */
 .v-stage:fullscreen { max-width:100%; padding:0; background:#000; }
 .v-stage:fullscreen .v-frame { border-radius:0; border:none; }
 
@@ -106,35 +106,29 @@ a { color:var(--primary); text-decoration:none; }
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 10px;
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
   background: #525659;
   scroll-behavior: smooth;
 }
 
-/* Halaman PDF (Lazy Loaded) */
+/* Halaman PDF yang sudah diperbaiki */
 .pdf-page {
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  width: 100%;
-  max-width: 900px;
-  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  /* Lebar dikunci maksimal 800px agar pas di layar laptop/PC */
+  width: 90%;
+  max-width: 800px;
   border-radius: 4px;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #888;
-  font-size: 0.85rem;
 }
 
 .pdf-page canvas {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
   display: block;
 }
 
@@ -182,7 +176,7 @@ a { color:var(--primary); text-decoration:none; }
   .foot-btn span { display:none; }
   .foot-btn { padding:.5rem .6rem; }
   .pdf-container { padding: 10px 0; gap: 10px; }
-  .pdf-page { border-radius: 0; max-width: 100%; }
+  .pdf-page { width: 100%; border-radius: 0; max-width: 100%; }
 }
 </style>
 </head>
@@ -357,7 +351,7 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     RENDER CUSTOM PDF (Lazy Loading - Anti OOM)
+     RENDER CUSTOM PDF (Sequential Progressive - Anti Crash)
      ========================================================== */
   async initCustomPDF() {
     this.dom.vLoadingText.textContent = 'Mengunduh dokumen PDF...';
@@ -394,69 +388,46 @@ class ViewerEngine {
       this.dom.mediaContainer.appendChild(container);
       this.dom.vFrame.classList.add('frame-media');
 
-      // Layar loading disembunyikan seketika
+      // Hitung lebar maksimal halaman berdasarkan layar
+      const containerWidth = Math.min(850, window.innerWidth - 60);
+      const outputScale = Math.min(window.devicePixelRatio || 1, 2.0);
+
+      // Sembunyikan loading screen seketika (jangan tunggu semua selesai)
       this.dom.vLoading.style.opacity = '0';
       setTimeout(() => { this.dom.vLoading.style.display = 'none'; }, 300);
 
-      // 1. Buat semua placeholder halaman kosong (tanpa render)
-      const pageWrappers = [];
+      // Proses Halaman 1 per 1 (Anti Freeze)
       for (let i = 1; i <= total; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1 });
+        const nativeViewport = page.getViewport({ scale: 1 });
+        
+        // Skala agar pas dengan lebar layar
+        const scale = (containerWidth * outputScale) / nativeViewport.width;
+        const viewport = page.getViewport({ scale });
         
         const wrapper = document.createElement('div');
         wrapper.className = 'pdf-page';
-        wrapper.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
-        wrapper.dataset.pageNum = i;
-        wrapper.innerHTML = `<div style="color:var(--muted); font-size:0.8rem;">Memuat halaman ${i}...</div>`;
         
+        // Atur tinggi pembungkus agar tidak meloncat saat proses render
+        wrapper.style.height = (viewport.height / outputScale) + 'px';
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        
+        wrapper.appendChild(canvas);
         container.appendChild(wrapper);
-        pageWrappers.push(wrapper);
+        
+        // Render halaman ke canvas
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        // Jeda 15ms agar browser bisa bernapas (mencegah freeze)
+        await new Promise(r => setTimeout(r, 15));
       }
-
-      // 2. Gunakan Intersection Observer untuk merender HANYA saat terlihat di layar
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const wrapper = entry.target;
-            if (wrapper.dataset.rendered) return;
-            wrapper.dataset.rendered = 'true';
-            this.renderSinglePage(pdf, parseInt(wrapper.dataset.pageNum), wrapper);
-            observer.unobserve(wrapper);
-          }
-        });
-      }, { root: container, rootMargin: '300px' }); // 300px = mulai render 1 layar sebelum masuk
-
-      pageWrappers.forEach(w => observer.observe(w));
 
     } catch (err) {
       console.error('Custom PDF Error:', err);
       this.showError('Gagal memuat PDF: ' + err.message);
-    }
-  }
-
-  // Fungsi pembantu untuk merender satu halaman ke dalam Canvas
-  async renderSinglePage(pdf, pageNum, wrapper) {
-    try {
-      const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.5 }); // Kualitas HD tapi hemat memori
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      
-      // Pastikan canvas mengisi wrapper dengan benar
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.objectFit = 'contain';
-      
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-      
-      wrapper.innerHTML = ''; // Hapus tulisan "Memuat..."
-      wrapper.appendChild(canvas);
-    } catch (err) {
-      console.error('Render single page error:', err);
-      wrapper.innerHTML = `<div style="color:red; font-size:0.8rem;">Gagal memuat gambar</div>`;
     }
   }
 
