@@ -107,66 +107,66 @@ a { color:var(--primary); text-decoration:none; }
   width: 100%;
   height: 100%;
   background: #525659;
+  /* Flexbox untuk menengahkan konten */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 1. Mode Gulir (Scroll) - Default */
+/* 1. Mode Gulir (Scroll) */
 .pdf-container.mode-scroll {
+  display: block;
   overflow-y: auto;
   overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 10px;
-  padding-bottom: 100px;
+  padding: 20px 10px 100px 10px; /* Padding bawah untuk toolbar */
 }
 .pdf-container.mode-scroll .pdf-spread { display: contents; }
-.pdf-container.mode-scroll .pdf-page { 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4); 
-  margin-bottom: 15px;
-}
-
-/* 2. Mode Slide (1 Halaman Tetap - Instan) */
-.pdf-container.mode-1page {
-  overflow: hidden; /* Kunci Scroll */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15px 15px 80px 15px;
-}
-.pdf-container.mode-1page .pdf-spread { display: contents; }
-/* Sembunyikan semua, tampilkan hanya yang aktif */
-.pdf-container.mode-1page .pdf-page {
-  display: none; 
+.pdf-container.mode-scroll .pdf-page {
+  margin: 0 auto 15px auto;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
-.pdf-container.mode-1page .pdf-page.active {
-  display: flex;
+
+/* 2. Mode Slide (1 Halaman) & Buku (2 Halaman) - TERKUNCI */
+.pdf-container.mode-1page, 
+.pdf-container.mode-2page {
+  overflow: hidden; /* Kunci scroll total */
+  padding: 10px;
+  padding-bottom: 80px; /* Ruang aman untuk toolbar melayang */
 }
 
-/* 3. Mode Buku (2 Halaman Tetap - Instan) */
-.pdf-container.mode-2page {
-  overflow: hidden; /* Kunci Scroll */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15px 15px 80px 15px;
-}
+/* Tampilan Halaman Aktif */
+.pdf-container.mode-1page .pdf-page,
 .pdf-container.mode-2page .pdf-spread {
   display: none;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
 }
+.pdf-container.mode-1page .pdf-page.active,
 .pdf-container.mode-2page .pdf-spread.active {
   display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mode Buku (2 Halaman) */
+.pdf-container.mode-2page .pdf-spread {
+  gap: 10px;
+}
+.pdf-container.mode-2page .pdf-page {
+  flex: 1; /* Masing-masing 50% */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 
 /* Gaya Kanvas PDF */
 .pdf-page canvas {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
+  width: auto;
+  height: auto;
+  object-fit: contain; /* Pastikan gambar tidak gepeng */
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   border-radius: 2px;
@@ -236,22 +236,40 @@ a { color:var(--primary); text-decoration:none; }
 .btn-open-ext { display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1.5rem; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; font-size:.85rem; transition:all .15s; width: 100%; justify-content: center; }
 .btn-open-ext:hover { background:var(--primary-hover); text-decoration:none; transform:translateY(-1px); }
 
-/* LOADING & FOOTER */
+/* LOADING */
 .v-loading { position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem; z-index:15; padding:2rem; text-align:center; transition:opacity .3s; }
 .v-spinner { width:38px; height:38px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--primary); animation:spin .8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .v-loading-text { font-size:.85rem; font-weight:600; color:var(--text-soft); max-width:360px; }
 .v-error-text { color:var(--rose-ink); }
 
-.v-footer { height:var(--footer-h); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0 1rem; background:var(--surface); border-top:1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
-.v-author { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:var(--text-soft); min-width:0; }
-.v-author .av { width:28px; height:28px; border-radius:50%; background:var(--butter); color:var(--butter-ink); display:grid; place-items:center; font-size:.68rem; font-weight:800; flex-shrink:0; }
-.v-author .name { font-weight:700; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* ==========================================================
+   FOOTER BARU (LEBIH RAPI & PROFESIONAL)
+   ========================================================== */
+.v-footer { 
+  height:var(--footer-h); flex-shrink:0; 
+  display:flex; align-items:center; justify-content:space-between; 
+  gap:1rem; padding:0 1.5rem; background:var(--surface); 
+  border-top:1px solid var(--border); 
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.v-author { display:flex; flex-direction: column; justify-content: center; }
+.v-author .label { 
+  font-size:.65rem; color:var(--muted); font-weight: 600; 
+  text-transform: uppercase; letter-spacing: .05em; line-height: 1.2;
+}
+.v-author .name { 
+  font-size:.85rem; font-weight:700; color:var(--text); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .v-footer-actions { display:flex; gap:.4rem; flex-shrink:0; }
-.foot-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .85rem; border-radius:9px; font-size:.8rem; font-weight:700; transition:all .15s; text-decoration:none; }
-.foot-btn.ghost { background:var(--surface-2); color:var(--text-soft); border:1px solid var(--border); }
-.foot-btn.ghost:hover { background:var(--primary-soft); color:var(--primary); text-decoration:none; }
-.foot-btn svg { width:13px; height:13px; }
+.foot-btn { 
+  display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .85rem; 
+  border-radius:9px; font-size:.8rem; font-weight:700; transition:all .15s; 
+  text-decoration:none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-soft);
+}
+.foot-btn:hover { background:var(--primary-soft); color:var(--primary); border-color: var(--primary-ring); text-decoration:none; }
+.foot-btn svg { width:14px; height:14px; }
 
 /* ==========================================================
    MEDIA QUERIES: OPTIMASI MOBILE (HP)
@@ -265,9 +283,11 @@ a { color:var(--primary); text-decoration:none; }
   .v-subtitle { display:none; }
   .btn-back span { display:none; }
   .btn-back { padding:.5rem; }
-  .foot-btn span { display:none; }
-  .foot-btn { padding:.5rem .6rem; }
   
+  .v-footer { padding: 0 1rem; }
+  .foot-btn span { display: none; } /* Sembunyikan teks tombol Drive di HP */
+  
+  /* Toolbar Mobile */
   .pdf-toolbar { bottom: 15px; padding: 6px 8px; gap: 4px; }
   .pdf-tool-btn { width: 30px; height: 30px; }
   .pdf-tool-btn svg { width: 16px; height: 16px; }
@@ -629,29 +649,19 @@ class ViewerEngine {
     };
   }
 
+  // Menggunakan transform scale agar tidak merusak layout flex
   applyPdfZoom() {
     this.dom.pdfZoomIndicator.textContent = this.pdfZoomLevel + '%';
     const scale = this.pdfZoomLevel / 100;
-    const container = $('#pdfContainer');
-    if (!container) return;
-
-    if (this.pdfViewMode === 'mode-scroll') {
-      const baseWidth = window.innerWidth < 768 ? window.innerWidth - 20 : 850;
-      document.querySelectorAll('.pdf-page').forEach(page => {
-        page.style.width = (baseWidth * scale) + 'px';
-        page.style.maxWidth = (baseWidth * scale) + 'px';
-      });
-    } else if (this.pdfViewMode === 'mode-1page') {
-      document.querySelectorAll('.pdf-page').forEach(page => {
-        page.style.width = (container.clientWidth * scale) + 'px';
-        page.style.maxWidth = 'none';
-      });
-    } else if (this.pdfViewMode === 'mode-2page') {
-      document.querySelectorAll('.pdf-page').forEach(page => {
-        page.style.width = ((container.clientWidth - 30) / 2 * scale) + 'px';
-        page.style.maxWidth = 'none';
-      });
-    }
+    
+    document.querySelectorAll('.pdf-page').forEach(page => {
+      page.style.transform = `scale(${scale})`;
+      if (this.pdfViewMode === 'mode-scroll') {
+        page.style.transformOrigin = 'top center';
+      } else {
+        page.style.transformOrigin = 'center center';
+      }
+    });
 
     this.dom.btnZoomIn.disabled = this.pdfZoomLevel >= 200;
     this.dom.btnZoomOut.disabled = this.pdfZoomLevel <= 50;
@@ -664,10 +674,9 @@ class ViewerEngine {
     container.classList.remove('mode-scroll', 'mode-1page', 'mode-2page');
     container.classList.add(this.pdfViewMode);
 
-    // Reset inline styles agar rapi
+    // Reset transform bawaan (jika ada)
     document.querySelectorAll('.pdf-page').forEach(page => {
-      page.style.width = '';
-      page.style.maxWidth = '';
+      page.style.transform = '';
     });
 
     if (this.pdfViewMode === 'mode-scroll') {
@@ -681,42 +690,31 @@ class ViewerEngine {
     this.applyPdfZoom();
     this.updatePageVisibility();
     
-    // Scroll ke atas saat ganti mode agar pas
+    // Scroll ke halaman awal saat ganti mode
     if (this.pdfViewMode === 'mode-scroll') {
       this.scrollToPdfPage(this.pdfCurrentPage);
     }
   }
 
-  // FUNGSI BARU: Mengatur halaman mana yang tampil (instan tanpa geser)
+  // Fungsi Instan untuk Mode Slide
   updatePageVisibility() {
     const container = $('#pdfContainer');
     if (!container) return;
 
     if (this.pdfViewMode === 'mode-scroll') {
-      // Tampilkan semua halaman
       document.querySelectorAll('.pdf-page').forEach(p => p.classList.remove('active'));
       return;
     }
 
     if (this.pdfViewMode === 'mode-1page') {
-      // Hanya tampilkan halaman aktif
       document.querySelectorAll('.pdf-page').forEach(p => {
-        if (parseInt(p.dataset.pageNum) === this.pdfCurrentPage) {
-          p.classList.add('active');
-        } else {
-          p.classList.remove('active');
-        }
+        p.classList.toggle('active', parseInt(p.dataset.pageNum) === this.pdfCurrentPage);
       });
     } 
     else if (this.pdfViewMode === 'mode-2page') {
-      // Tampilkan spread aktif (misal: halaman 1 & 2)
       const currentSpread = Math.ceil(this.pdfCurrentPage / 2);
       document.querySelectorAll('.pdf-spread').forEach(s => {
-        if (parseInt(s.dataset.spreadNum) === currentSpread) {
-          s.classList.add('active');
-        } else {
-          s.classList.remove('active');
-        }
+        s.classList.toggle('active', parseInt(s.dataset.spreadNum) === currentSpread);
       });
     }
   }
@@ -730,7 +728,6 @@ class ViewerEngine {
       const target = document.querySelector(`.pdf-page[data-page-num="${pageNum}"]`);
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      // Mode Slide: Instan ganti halaman
       this.updatePageVisibility();
     }
     
@@ -811,7 +808,7 @@ class ViewerEngine {
   }
 
   /* ==========================================================
-     UTILS
+     UTILS & FOOTER BARU
      ========================================================== */
   mountMedia(html) {
     this.dom.mediaContainer.innerHTML = html;
@@ -820,11 +817,21 @@ class ViewerEngine {
 
   renderFooter() {
     const name = (this.item.Pengunggah || '').split(' — ').pop() || 'Anonim';
-    const initial = name.charAt(0).toUpperCase();
-    this.dom.vAuthor.innerHTML = `<span class="av">${this.escapeHtml(initial)}</span><div><div class="name">${this.escapeHtml(name)}</div></div>`;
+    
+    // Desain ulang footer: Label + Nama
+    this.dom.vAuthor.innerHTML = `
+      <span class="label">Pengunggah</span>
+      <span class="name">${this.escapeHtml(name)}</span>
+    `;
+
     const actions = [];
     if (this.fileId) {
-      actions.push(`<a class="foot-btn ghost" href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>Buka Drive</span></a>`);
+      // Tombol Drive tanpa teks di HP
+      actions.push(`<a class="foot-btn" href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg><span>Buka Drive</span></a>`);
     }
     this.dom.vFooterActions.innerHTML = actions.join('');
   }
