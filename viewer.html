@@ -100,6 +100,15 @@ a { color:var(--primary); text-decoration:none; }
 .v-stage:fullscreen { max-width:100%; padding:0; background:#000; }
 .v-stage:fullscreen .v-frame { border-radius:0; border:none; }
 
+/* MEDIA CONTAINER (KUNCI PROPORSIONAL) */
+#mediaContainer {
+  width: 100%; 
+  height: 100%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+}
+
 /* ==========================================================
    CUSTOM PDF CONTAINER (3 MODES)
    ========================================================== */
@@ -169,7 +178,7 @@ a { color:var(--primary); text-decoration:none; }
   justify-content: center;
 }
 
-/* Gaya Kanvas PDF - Kunci agar tidak terpotong & proporsional */
+/* Gaya Kanvas PDF */
 .pdf-page canvas {
   max-width: 100%;
   max-height: 100%;
@@ -228,8 +237,19 @@ a { color:var(--primary); text-decoration:none; }
 /* IFRAME & EMBED */
 .v-frame iframe, .v-frame embed { width: 100%; height: 100%; border: 0; display: block; }
 
-/* AUDIO & EXTERNAL CARDS */
-.audio-card { width:100%; max-width:520px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2rem 1.75rem; text-align:center; box-shadow:var(--shadow-md); margin: 1rem; }
+/* ==========================================================
+   AUDIO & EXTERNAL CARDS (FIX PROPORSIONAL)
+   ========================================================== */
+.audio-card { 
+  width: 90%; 
+  max-width: 500px; 
+  background: var(--surface); 
+  border: 1px solid var(--border); 
+  border-radius: 16px; 
+  padding: 2.5rem 1.75rem; 
+  text-align: center; 
+  box-shadow: var(--shadow-md); 
+}
 .audio-cover { width:120px; height:120px; margin:0 auto 1.5rem; border-radius:50%; background:linear-gradient(135deg, var(--lavender) 0%, var(--primary-soft) 100%); display:flex; align-items:center; justify-content:center; color:var(--lav-ink); box-shadow:0 10px 30px rgba(136,153,196,.25); animation:audio-pulse 2.4s ease-in-out infinite; }
 .audio-cover svg { width:48px; height:48px; }
 @keyframes audio-pulse { 0%, 100% { transform:scale(1); } 50% { transform:scale(1.04); } }
@@ -237,7 +257,16 @@ a { color:var(--primary); text-decoration:none; }
 .audio-subtitle { font-size:.8rem; color:var(--muted); margin-bottom:1.25rem; }
 .audio-card audio { width:100%; margin-top:.5rem; outline:none; }
 
-.external-card { width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2.25rem 1.5rem; text-align:center; box-shadow:var(--shadow-md); margin: 1rem; }
+.external-card { 
+  width: 90%; 
+  max-width: 440px; 
+  background: var(--surface); 
+  border: 1px solid var(--border); 
+  border-radius: 16px; 
+  padding: 2.5rem 1.75rem; 
+  text-align: center; 
+  box-shadow: var(--shadow-md); 
+}
 .external-icon { width:80px; height:80px; border-radius:22px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; }
 .external-icon svg { width:36px; height:36px; }
 .external-card h2 { font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:.5rem; line-height:1.3; }
@@ -291,6 +320,11 @@ a { color:var(--primary); text-decoration:none; }
 
   .pdf-container.mode-scroll { padding: 10px 0 90px 0; }
   .pdf-container.mode-1page, .pdf-container.mode-2page { padding: 10px 10px 70px 10px; }
+
+  /* Penyesuaian Audio di HP */
+  .audio-card, .external-card { padding: 1.75rem 1.25rem; }
+  .audio-cover { width: 100px; height: 100px; }
+  .audio-cover svg { width: 40px; height: 40px; }
 }
 </style>
 </head>
@@ -369,7 +403,7 @@ a { color:var(--primary); text-decoration:none; }
     </div>
 
     <div class="v-frame" id="vFrame">
-      <div id="mediaContainer" style="width:100%; height:100%;"></div>
+      <div id="mediaContainer"></div>
     </div>
   </div>
 </main>
@@ -404,7 +438,7 @@ class ViewerEngine {
     this.modeIndex = 0;
 
     this.lastScrollTop = 0;
-    this.objectUrls = []; // Untuk cleanup blob audio
+    this.objectUrls = []; 
 
     this.dom = {
       vTitle: $('#vTitle'),
@@ -830,7 +864,7 @@ class ViewerEngine {
           <div class="audio-title">${this.escapeHtml(this.item.Judul)}</div>
           <div class="audio-subtitle">Audio Pembelajaran</div>
           <audio controls preload="auto" src="${audioUrl}" style="width:100%;"></audio>
-          <div style="margin-top:1rem;font-size:.75rem;color:var(--muted);">
+          <div style="margin-top:1.5rem;font-size:.75rem;color:var(--muted);">
             Tidak bisa memutar? <a href="https://drive.google.com/file/d/${encodeURIComponent(this.fileId)}/view" target="_blank" rel="noopener">Buka di Drive</a>
           </div>
         </div>
