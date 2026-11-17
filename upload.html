@@ -100,6 +100,15 @@ a:hover { text-decoration:underline; }
 
 .row { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
 
+/* HINT */
+.hint {
+  display:flex; gap:.55rem; padding:.75rem .85rem; margin-top:.6rem;
+  font-size:.78rem; line-height:1.45; border-radius:10px;
+  background:var(--butter); color:var(--butter-ink);
+}
+.hint svg { flex-shrink:0; margin-top:1px; }
+.hint b { font-weight:800; }
+
 /* SOURCE TABS (File / Link) */
 .source-tabs {
   display:inline-flex; padding:.25rem; width: 100%;
@@ -384,8 +393,8 @@ a:hover { text-decoration:underline; }
               </svg>
             </div>
             <p>Klik atau seret file ke sini</p>
-            <small>PDF, DOCX, JPG, MP3, MP4 — maks 25 MB</small>
-            <input type="file" id="fileInput">
+            <small>PDF, DOCX, PPTX, JPG, MP3, MP4 — maks 25 MB</small>
+            <input type="file" id="fileInput" accept="application/pdf,.docx,.pptx,image/*,audio/*,video/*">
           </label>
           <div id="fileSelected" class="file-selected hidden">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -394,6 +403,12 @@ a:hover { text-decoration:underline; }
             <span class="name" id="fileName"></span>
             <span class="size" id="fileSize"></span>
             <button type="button" id="fileRemove">Hapus</button>
+          </div>
+          <div id="pdfHint" class="hint hidden">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+            </svg>
+            <span>Untuk <b>Slide</b>, <b>Ebook</b>, <b>LKPD</b>, dan <b>Poster</b>, unggah <b>PDF</b> agar tampil sempurna di viewer. PowerPoint: <i>File → Ekspor → PDF</i>. Word/Canva: <i>Unduh sebagai PDF</i>.</span>
           </div>
         </div>
 
@@ -425,6 +440,10 @@ const API_URL  = 'https://script.google.com/macros/s/AKfycbzsCStKIS9V6qFNeGqhI1j
 const TOKEN_KEY = 'gopedia_token';
 const NAME_KEY  = 'gopedia_nama';
 const THEME_KEY = 'gopedia_theme';
+
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const OK_MIME = /^(application\/pdf|image\/|audio\/|video\/|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml|presentationml)\.)/;
+const DOC_TYPES = ['Slide', 'Ebook', 'LKPD', 'Poster'];
 
 const $ = (s) => document.querySelector(s);
 
@@ -468,6 +487,17 @@ function toast(msg) {
   el._t = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
+/* SINKRONISASI TIPE -> HINT & TAB */
+function syncTipe() {
+  const tipe = $('#tipe').value;
+  $('#pdfHint').classList.toggle('hidden', !DOC_TYPES.includes(tipe));
+}
+
+$('#tipe').addEventListener('change', () => {
+  syncTipe();
+  if ($('#tipe').value === 'Link') $('#tabLink').click();
+});
+
 /* TABS (FILE / LINK) */
 $('#tabFile').addEventListener('click', () => {
   state.source = 'file';
@@ -485,7 +515,6 @@ $('#tabLink').addEventListener('click', () => {
 });
 
 /* FILE HANDLING */
-const MAX_FILE_BYTES = 25 * 1024 * 1024;
 $('#fileInput').addEventListener('change', (e) => handleFile(e.target.files[0]));
 
 ['dragenter','dragover'].forEach(ev => {
@@ -503,7 +532,13 @@ $('#fileDrop').addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0
 function handleFile(file) {
   if (!file) return;
   if (file.size > MAX_FILE_BYTES) {
-    toast(`File terlalu besar (maks 25 MB).`);
+    toast('File terlalu besar (maks 25 MB).');
+    $('#fileInput').value = '';
+    return;
+  }
+  if (file.type && !OK_MIME.test(file.type)) {
+    toast('Jenis file tidak didukung. Pakai PDF, gambar, audio, video, DOCX, atau PPTX.');
+    $('#fileInput').value = '';
     return;
   }
   state.file = file;
@@ -585,11 +620,16 @@ $('#uploadForm').addEventListener('submit', async (e) => {
     const data = await res.json();
 
     if (!data.ok) {
-      showAlert('error', `<strong>Gagal mengunggah:</strong> ${errorMessage(data.error)}`);
       if (data.error === 'sesi_habis') {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(NAME_KEY);
+        state.token = '';
+        resetButton();
+        toast('Sesi habis — silakan masuk ulang.');
+        setTimeout(() => { location.href = 'index.html'; }, 1500);
+        return;
       }
+      showAlert('error', `<strong>Gagal mengunggah:</strong> ${errorMessage(data.error)}`);
       resetButton(); return;
     }
 
@@ -607,8 +647,7 @@ $('#uploadForm').addEventListener('submit', async (e) => {
 
 /* BUILD PERMALINK & SUKSES UI */
 function buildPermalink(itemId) {
-  const base = window.location.origin + window.location.pathname.replace(/upload\.html.*$/, '');
-  return `${base}viewer.html?id=${encodeURIComponent(itemId)}`;
+  return new URL('viewer.html?id=' + encodeURIComponent(itemId), new URL('.', location.href)).href;
 }
 
 function showPermalink(data, permalink) {
@@ -630,7 +669,6 @@ function showPermalink(data, permalink) {
           </button>
         </div>
         <div class="permalink-actions">
-          <!-- PERBAIKAN: Buka Viewer tanpa target="_blank" -->
           <a href="${permalink}">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
@@ -678,6 +716,7 @@ function resetForm() {
   $('#fileSelected').classList.add('hidden');
   $('#fileDrop').classList.remove('hidden');
   $('#tabFile').click();
+  syncTipe();
 }
 
 function resetButton() {
@@ -693,15 +732,21 @@ function resetButton() {
 
 function errorMessage(code) {
   const map = {
-    sesi_habis: 'Sesi login habis, silakan login ulang.',
+    sesi_habis: 'Sesi login habis, silakan masuk ulang.',
     data_tidak_lengkap: 'Judul dan Tipe wajib diisi.',
-    file_terlalu_besar: 'File terlalu besar (maks 25 MB).',
+    tipe_tidak_valid: 'Tipe media tidak dikenali server.',
+    link_tidak_valid: 'Tautan harus diawali http:// atau https://',
     file_atau_link_kosong: 'Pilih file atau isi tautan.',
+    file_terlalu_besar: 'File terlalu besar (maks 25 MB).',
+    jenis_file_tidak_didukung: 'Jenis file tidak didukung viewer. Pakai PDF, gambar, audio, video, DOCX, atau PPTX.',
     drive_error: 'Gagal menyimpan ke Google Drive.',
     sheet_katalog_tidak_ada: 'Sheet Katalog tidak ditemukan.',
-    network_error: 'Koneksi terputus, periksa internet Anda.'
+    sheet_error: 'Gagal menulis ke sheet Katalog.',
+    sistem_sibuk: 'Server sedang sibuk, coba lagi sebentar.',
+    invalid_json: 'Permintaan tidak valid.',
+    server_error: 'Terjadi kesalahan di server.',
   };
-  return map[code] || code || 'unknown error';
+  return map[code] || `Gagal mengunggah (kode: ${code || 'unknown'})`;
 }
 </script>
 </body>
