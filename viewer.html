@@ -67,15 +67,13 @@ svg{width:100%;height:100%;display:block}
 .sheet canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .sheet .ink{pointer-events:none;z-index:2}
 .t-pen .ink{pointer-events:auto;cursor:crosshair;touch-action:none}
-.t-laser,.t-laser .vp{cursor:none;touch-action:none}
-.fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 
 /* Toolbar */
 .pdf-toolbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:30;max-width:calc(100% - 16px);
   display:flex;align-items:center;gap:4px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;
-  background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:999px;
-  box-shadow:0 10px 30px rgba(0,0,0,.18);transition:transform .25s,opacity .25s}
-[data-theme="dark"] .pdf-toolbar{background:rgba(36,36,47,.94)}
+  background:rgba(255,255,255,.55);backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--border);border-radius:999px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);transition:transform .18s ease-out,opacity .18s ease-out}
+[data-theme="dark"] .pdf-toolbar{background:rgba(36,36,47,.55);backdrop-filter:blur(18px) saturate(1.4)}
 .pdf-toolbar.off{transform:translateX(-50%) translateY(160%);opacity:0;pointer-events:none}
 .tb{width:34px;height:34px;flex:none;padding:8px;border-radius:50%;color:var(--text);transition:background .15s}
 .tb:hover:not(:disabled){background:var(--surface-2)}
@@ -163,7 +161,6 @@ svg{width:100%;height:100%;display:block}
         <i class="sep"></i>
         <button class="tb" id="bMode" title="Ganti mode (M)"></button>
         <i class="sep"></i>
-        <button class="tb" id="bLaser" data-ic="laser" title="Laser pointer (L)"></button>
         <button class="tb" id="bPen" data-ic="pen" title="Pena (P)"></button>
         <span class="pen-only" id="penOnly" hidden>
           <button class="tb" id="bColor" title="Ganti warna pena"><b class="dot"></b></button>
@@ -187,15 +184,18 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzsCStKIS9V6qFNeGqhI1jh
 const THEME_KEY = 'gopedia_theme';
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 const YT = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/;
+const TB_HIDE_MS = 1600;
+const TB_ZONE = 90;
+
 const $ = (s) => document.querySelector(s);
 const esc = (s) => s == null ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = (u) => { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) ? s : ''; };
 
 const ICONS = {
   prev:'<path d="M15 18l-6-6 6-6"/>', next:'<path d="M9 18l6-6-6-6"/>',
   minus:'<path d="M5 12h14"/>', plus:'<path d="M12 5v14M5 12h14"/>',
   slide:'<rect x="3" y="5" width="18" height="14" rx="2"/>', scroll:'<path d="M4 6h16M4 12h16M4 18h16"/>',
   book:'<path d="M3 5h18v14H3zM12 5v14"/>',
-  laser:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
   pen:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
   undo:'<path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-15-6.7L3 13"/>',
   trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
@@ -213,16 +213,11 @@ const b64ToBytes = (b) => { const s = atob(b.replace(/\s/g, '')), a = new Uint8A
 
 /* ==========================================================
    PDF VIEWER
-   - page / book : hanya merender halaman yang tampil (cepat untuk slide 50+)
-   - scroll      : render malas (IntersectionObserver), kanvas dilepas bila jauh
-   - zoom        : mengubah ukuran layout + render ulang tajam (bisa di-pan)
-   - laser & pena: overlay terpisah, coretan tersimpan per halaman (koordinat relatif)
    ========================================================== */
 class PdfViewer {
   constructor(app, pdf, key) {
     Object.assign(this, { app, pdf, key, n: pdf.numPages, page: 1, zoom: 1, tool: null, ink: {}, sheets: [],
-      colors: ['#ef4444', '#2563eb', '#f59e0b', '#16a34a', '#111827'], ci: 0, ratio: .75, shown: false, wt: 0, raf: 0,
-      laser: { x: 0, y: 0, on: false, trail: [] } });
+      colors: ['#ef4444', '#2563eb', '#f59e0b', '#16a34a', '#111827'], ci: 0, ratio: .75, shown: false, raf: 0 });
     this.color = this.colors[0];
   }
 
@@ -234,11 +229,11 @@ class PdfViewer {
     this.mode = this.modes[0];
     this.page = Math.min(Math.max(+localStorage.getItem(this.key) || 1, 1), this.n);
 
-    $('#mediaContainer').innerHTML = '<div class="wrap" id="wrap"><div class="vp" id="vp"></div><canvas class="fx" id="fx"></canvas></div>';
-    this.wrap = $('#wrap'); this.vp = $('#vp'); this.fx = $('#fx');
+    $('#mediaContainer').innerHTML = '<div class="wrap" id="wrap"><div class="vp" id="vp"></div></div>';
+    this.wrap = $('#wrap'); this.vp = $('#vp');
     this.tb = $('#pdfToolbar'); this.tb.hidden = false;
     fillIcons(this.tb);
-    this.fxSize(); this.bind(); this.mount();
+    this.bind(); this.mount();
     this.showTb();
   }
 
@@ -289,7 +284,8 @@ class PdfViewer {
 
   layout() {
     const vw = this.vp.clientWidth, vh = this.vp.clientHeight, p = vw < 600 ? 6 : 16, g = 8, r = this.ratio;
-    const pb = this.mode === 'scroll' ? p + 80 : (document.fullscreenElement ? p : 64);
+    // Perbaikan padding bottom untuk fullscreen
+    const pb = this.mode === 'scroll' ? p + 120 : (document.fullscreenElement ? 72 : 64);
     this.vp.style.padding = `${p}px ${p}px ${pb}px`;
     const aw = vw - 2 * p, ah = vh - p - pb;
     let w;
@@ -366,11 +362,10 @@ class PdfViewer {
     if (cur !== this.page) { this.page = cur; this.ui(); }
   }
 
-  /* ---------- alat: laser & pena ---------- */
+  /* ---------- alat: pena ---------- */
   setTool(t) {
     this.tool = this.tool === t ? null : t;
     this.wrap.className = 'wrap' + (this.tool ? ' t-' + this.tool : '');
-    this.laser.on = false; this.laser.trail = [];
     this.ui();
   }
   undo() {
@@ -380,34 +375,6 @@ class PdfViewer {
   clearInk() {
     const s = [...this.sheets].reverse().find(s => this.ink[s.dataset.n]?.length);
     if (s) { this.ink[s.dataset.n] = []; this.drawInk(s); }
-  }
-  fxSize() {
-    this.dpr = Math.min(devicePixelRatio || 1, 2);
-    this.fx.width = this.wrap.clientWidth * this.dpr; this.fx.height = this.wrap.clientHeight * this.dpr;
-    this.fxc = this.fx.getContext('2d');
-  }
-  loop() {
-    if (this.raf) return;
-    const step = () => {
-      const c = this.fx, x = this.fxc, L = this.laser, now = performance.now(), T = 500;
-      x.clearRect(0, 0, c.width, c.height);
-      L.trail = L.trail.filter(p => now - p[2] < T);
-      x.save(); x.scale(this.dpr, this.dpr); x.lineCap = 'round';
-      for (let i = 1; i < L.trail.length; i++) {
-        const a = L.trail[i - 1], b = L.trail[i], k = 1 - (now - b[2]) / T;
-        x.strokeStyle = `rgba(255,40,40,${k * .8})`; x.lineWidth = 2 + 6 * k;
-        x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke();
-      }
-      if (L.on) {
-        const g = x.createRadialGradient(L.x, L.y, 0, L.x, L.y, 18);
-        g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(.25, 'rgba(255,50,50,.95)'); g.addColorStop(1, 'rgba(255,0,0,0)');
-        x.fillStyle = g; x.beginPath(); x.arc(L.x, L.y, 18, 0, 7); x.fill();
-      }
-      x.restore();
-      this.raf = this.tool === 'laser' && (L.on || L.trail.length) ? requestAnimationFrame(step) : 0;
-      if (!this.raf) x.clearRect(0, 0, c.width, c.height);
-    };
-    this.raf = requestAnimationFrame(step);
   }
 
   /* ---------- UI ---------- */
@@ -421,25 +388,28 @@ class PdfViewer {
     g('bZin').disabled = this.zoom >= 3; g('bZout').disabled = this.zoom <= .5;
     g('bMode').innerHTML = ic(this.mode === 'page' ? 'slide' : this.mode);
     g('bMode').title = `Mode: ${label} (M) — klik untuk ganti`;
-    g('bLaser').classList.toggle('active', this.tool === 'laser');
     g('bPen').classList.toggle('active', this.tool === 'pen');
     g('penOnly').hidden = this.tool !== 'pen';
     g('bColor').firstElementChild.style.background = this.color;
     try { localStorage.setItem(this.key, this.page); } catch (e) {}
   }
+  
   showTb() {
     this.tb.classList.remove('off');
     clearTimeout(this.hideT);
-    this.hideT = setTimeout(() => { if (!this.tb.matches(':hover')) this.tb.classList.add('off'); }, 3500);
+    this.hideT = setTimeout(() => { 
+      if (!this.tb.matches(':hover')) this.tb.classList.add('off'); 
+    }, TB_HIDE_MS);
   }
   toggleTb() { this.tb.classList.contains('off') ? this.showTb() : (clearTimeout(this.hideT), this.tb.classList.add('off')); }
 
   bind() {
     const g = (id) => $('#' + id), w = this.wrap;
+    
     g('bPrev').onclick = () => this.prev(); g('bNext').onclick = () => this.next();
     g('bZin').onclick = () => this.zoomBy(.25); g('bZout').onclick = () => this.zoomBy(-.25); g('bZoom').onclick = () => this.setZoom(1);
     g('bMode').onclick = () => this.cycle();
-    g('bLaser').onclick = () => this.setTool('laser'); g('bPen').onclick = () => this.setTool('pen');
+    g('bPen').onclick = () => this.setTool('pen');
     g('bColor').onclick = () => { this.color = this.colors[this.ci = (this.ci + 1) % this.colors.length]; this.ui(); };
     g('bUndo').onclick = () => this.undo(); g('bClear').onclick = () => this.clearInk();
     g('bPage').onclick = () => { const v = parseInt(prompt(`Ke halaman (1–${this.n}):`, this.page), 10); if (v) this.go(v); };
@@ -451,43 +421,40 @@ class PdfViewer {
       this.sf = requestAnimationFrame(() => { this.sf = 0; this.track(); });
     }, { passive: true });
 
-    // laser
-    const lz = (e, on) => {
-      if (this.tool !== 'laser') return;
-      const r = w.getBoundingClientRect(), L = this.laser;
-      L.on = on; L.x = e.clientX - r.left; L.y = e.clientY - r.top;
-      if (on) L.trail.push([L.x, L.y, performance.now()]);
-      this.loop();
-    };
+    // Tampilkan toolbar hanya saat kursor menyentuh area bawah
     w.addEventListener('pointermove', (e) => {
-      lz(e, e.pointerType !== 'touch' || e.buttons > 0 || true);
       const r = w.getBoundingClientRect();
-      if (!this.tool || e.clientY > r.bottom - 110) this.showTb();
-    });
-    w.addEventListener('pointerdown', (e) => lz(e, true));
-    w.addEventListener('pointerleave', (e) => lz(e, false));
+      if (e.clientY > r.bottom - TB_ZONE) this.showTb();
+    }, { passive: true });
 
-    // ketuk tepi / geser untuk pindah slide
+    // Navigasi: Hanya klik kiri/kanan (swipe dihilangkan)
     let sx = null, sy = 0;
     w.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; });
     w.addEventListener('pointerup', (e) => {
       if (sx == null) return;
       const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
+      
+      // Jika sedang pakai pena, jangan picu navigasi
       if (this.tool) return;
-      if (this.mode !== 'scroll' && this.zoom === 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) return dx < 0 ? this.next() : this.prev();
+
+      // Deteksi jika ini hanya sebuah klik/tap (bukan drag/geser)
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
         const r = w.getBoundingClientRect(), f = (e.clientX - r.left) / r.width;
-        if (this.mode !== 'scroll' && this.zoom === 1 && f < .25) this.prev();
-        else if (this.mode !== 'scroll' && this.zoom === 1 && f > .75) this.next();
-        else this.toggleTb();
+        
+        // Hanya navigasi di mode page/book dan saat tidak zoom in
+        if (this.mode !== 'scroll' && this.zoom === 1) {
+          if (f < .25) this.prev();
+          else if (f > .75) this.next();
+          else this.toggleTb();
+        } else {
+          this.toggleTb();
+        }
       }
     });
 
+    // Scroll-wheel hanya untuk zoom (ctrl), tidak untuk navigasi halaman
     w.addEventListener('wheel', (e) => {
       if (e.ctrlKey) { e.preventDefault(); return this.zoomBy(e.deltaY < 0 ? .25 : -.25); }
-      if (this.mode === 'scroll' || this.zoom !== 1 || Math.abs(e.deltaY) < 8) return;
-      const t = Date.now(); if (t - this.wt < 350) return; this.wt = t;
-      e.deltaY > 0 ? this.next() : this.prev();
     }, { passive: false });
 
     document.addEventListener('keydown', (e) => {
@@ -505,7 +472,6 @@ class PdfViewer {
         case '+': case '=': this.zoomBy(.25); break;
         case '-': this.zoomBy(-.25); break;
         case '0': this.setZoom(1); break;
-        case 'l': case 'L': this.setTool('laser'); break;
         case 'p': case 'P': this.setTool('pen'); break;
         case 'u': case 'U': this.undo(); break;
         case 'c': case 'C': this.clearInk(); break;
@@ -517,7 +483,7 @@ class PdfViewer {
       if (h) { e.preventDefault(); this.showTb(); }
     });
 
-    const rs = () => { clearTimeout(this.rt); this.rt = setTimeout(() => { this.layout(); this.fxSize(); this.repaint(); }, 120); };
+    const rs = () => { clearTimeout(this.rt); this.rt = setTimeout(() => { this.layout(); this.repaint(); }, 120); };
     window.addEventListener('resize', rs);
     document.addEventListener('fullscreenchange', rs);
   }
@@ -645,8 +611,8 @@ class ViewerEngine {
   }
 
   initExternal() {
-    const url = this.link || this.params.get('url');
-    if (!url) return this.showError('Tautan tidak ditemukan.');
+    const url = safeUrl(this.link) || safeUrl(this.params.get('url'));
+    if (!url) return this.showError('Tautan tidak ditemukan atau tidak valid (harus http/https).');
     this.mount(`<div class="external-card"><div class="external-icon">${ic('link')}</div>
       <h2>${esc(this.item.Judul)}</h2>
       <p>Media ini berupa tautan eksternal yang tidak dapat ditampilkan langsung di halaman ini.</p>
