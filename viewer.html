@@ -257,16 +257,26 @@ class PdfViewer {
   }
 
   layout() {
-    const vw = this.vp.clientWidth, vh = this.vp.clientHeight, p = vw < 600 ? 6 : 16, g = 8, r = this.ratio;
-    // Fullscreen menggunakan padding yang sama dengan atas agar tidak ada ruang kosong berlebih
-    const pb = this.mode === 'scroll' ? p + 80 : (document.fullscreenElement ? p : 64);
+    const vw = this.vp.clientWidth, vh = this.vp.clientHeight;
+    const fs = !!document.fullscreenElement;
+    
+    // KUNCI PERBAIKAN: Jika fullscreen (fs=true), padding = 0 mutlak
+    const p = fs ? 0 : (vw < 600 ? 6 : 16);
+    const g = fs ? 0 : 8; 
+    const r = this.ratio;
+    const pb = this.mode === 'scroll' ? p + 80 : (fs ? 0 : 64);
+
     this.vp.style.padding = `${p}px ${p}px ${pb}px`;
+    
     const aw = vw - 2 * p, ah = vh - p - pb;
+    
     let w;
     if (this.mode === 'scroll') w = Math.min(aw, this.landscape ? 1280 : 900);
     else if (this.mode === 'book') w = Math.min((aw - g) / 2, ah / r);
     else w = Math.min(aw, ah / r);
+
     w = Math.max(w, 60) * this.zoom;
+
     this.sheets.forEach(s => {
       s._w = w; s.style.width = w + 'px'; s.style.height = w * r + 'px';
     });
